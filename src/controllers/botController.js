@@ -20,18 +20,18 @@ const MENU_HINT = 'Para voltar ao menu, digite "Menu".';
 const COOLDOWN_MS = env.menuCooldownMinutes * 60 * 1000;
 
 const MAIN_MENU_MESSAGE = [
-  "Ola! Tudo bem? :)",
+  "Ola! Tudo bem? 😊",
   "",
   "Sou o Nill, atendente virtual da Cia. Renato Torres.",
   "",
   "Como posso te ajudar?",
   "",
   "1️⃣ Marcar visita/aula teste",
-  "2️⃣ Dias e horarios",
-  "3️⃣ Localizacao",
-  "4️⃣ Valores e matricula",
+  "2️⃣ Dias e horários",
+  "3️⃣ Localização",
+  "4️⃣ Valores e matrícula",
   "5️⃣ Modalidades",
-  "6️⃣ Documentos para matricula",
+  "6️⃣ Documentos para matrícula",
   "7️⃣ Uniforme",
   "8️⃣ Falar com atendente",
   "",
@@ -39,13 +39,13 @@ const MAIN_MENU_MESSAGE = [
 ].join("\n");
 
 const SHORT_FALLBACK_MENU = [
-  "Posso te ajudar por aqui :)",
+  "Posso te ajudar por aqui 😊",
   "",
-  "Escolha uma opcao:",
+  "Escolha uma opção:",
   "",
   "1️⃣ Marcar visita/aula teste",
-  "2️⃣ Horarios",
-  "3️⃣ Localizacao",
+  "2️⃣ Horários",
+  "3️⃣ Localização",
   "4️⃣ Valores",
   "5️⃣ Modalidades",
   "6️⃣ Falar com atendente",
@@ -59,19 +59,19 @@ const MODALITY_OPTIONS = {
   "3": "Teatro",
   "4": "Musicalizacao",
   "5": "Expressao corporal",
-  "6": "Ainda nao sei"
+  "6": "Ainda não sei"
 };
 
 const SHIFT_OPTIONS = {
   "1": "Manha",
   "2": "Tarde",
   "3": "Sabado",
-  "4": "Ainda nao sei"
+  "4": "Ainda não sei"
 };
 
 const ORIGIN_OPTIONS = {
   "1": "Instagram",
-  "2": "Indicacao",
+  "2": "Indicação",
   "3": "WhatsApp",
   "4": "Passando pelo local",
   "5": "Outro"
@@ -83,22 +83,22 @@ const PRICE_MODALITY_OPTIONS = {
   "3": "Teatro",
   "4": "Musicalizacao Infantil",
   "5": "Expressao Corporal / Ginastica Ritmica",
-  "6": "Ainda nao sei"
+  "6": "Ainda não sei"
 };
 
 const HELP_KEYWORD_RULES = [
   {
-    keywords: ["horario", "horarios", "dias", "funciona", "turma", "turno"],
+    keywords: ["horario", "horarios", "dias", "funciona", "turma", "turno", "horário", "horários"],
     messages: [
       "Nossa grade funciona assim:",
       "Segundas e quartas: Ballet / Classico / Contemporaneo.",
       "Tercas e quintas: Jazz Kids / Jazz Dance / Danca Moderna.",
-      "Sabados: Teatro e musicalizacao. Temos turmas pela manha e tarde."
+      "Sabados: Teatro e musicalização. Temos turmas pela manha e tarde."
     ],
     cta: "schedule"
   },
   {
-    keywords: ["localizacao", "endereco", "onde fica", "local", "cajazeiras", "mapa", "como chegar"],
+    keywords: ["localizacao", "endereco", "onde fica", "local", "cajazeiras", "mapa", "como chegar", "onde é"],
     messages: [
       "Estamos na Estr. do Coqueiro Grande, 8.",
       "Fazenda Grande 2 - Salvador/BA.",
@@ -107,10 +107,10 @@ const HELP_KEYWORD_RULES = [
     cta: "schedule"
   },
   {
-    keywords: ["valor", "valores", "preco", "mensalidade", "matricula", "desconto"],
+    keywords: ["valor", "valores", "preco", "mensalidade", "matricula", "desconto", "matrícula", "preço", "custa"],
     messages: [
-      "A mensalidade e R$ 169,00.",
-      "Temos 50% de desconto na matricula.",
+      "A mensalidade é R$ 169,00.",
+      "Temos 50% de desconto na matrícula.",
       "Aluno matriculado que indica ganha 5% de desconto."
     ],
     cta: "schedule"
@@ -118,36 +118,36 @@ const HELP_KEYWORD_RULES = [
   {
     keywords: ["uniforme", "fardamento", "collant", "saia", "tiara"],
     messages: [
-      "O fardamento e exclusivo e de uso pessoal.",
+      "O fardamento é exclusivo e de uso pessoal.",
       "Valor: R$ 210,00.",
       "Inclui collant, saia, tiara e item promocional."
     ],
     cta: "schedule"
   },
   {
-    keywords: ["documento", "documentos", "cpf", "rg", "certidao"],
+    keywords: ["documento", "documentos", "cpf", "rg", "certidao", "certidão"],
     messages: [
-      "Para matricula, trazer RG ou certidao do aluno.",
-      "Tambem CPF do aluno e do responsavel.",
-      "Leve comprovante de residencia e declaracao escolar."
+      "Para matrícula, trazer RG ou certidão do aluno.",
+      "Também CPF do aluno e do responsável.",
+      "Leve comprovante de residência e declaração escolar."
     ],
     cta: "schedule"
   },
   {
-    keywords: ["modalidade", "ballet", "jazz", "teatro", "musicalizacao", "expressao", "ginastica"],
+    keywords: ["modalidade", "ballet","balé", "jazz", "teatro", "musicalização", "expressão", "ginástica", "dança"],
     messages: [
-      "Temos Ballet, Jazz Dance, Danca Moderna e Teatro.",
-      "Tambem Musicalizacao Infantil, Expressao Corporal e Ginastica Ritmica.",
-      "Se quiser, posso te ajudar a escolher a melhor opcao."
+      "Temos Ballet, Jazz Dance, Dança Moderna e Teatro.",
+      "Temos também Musicalização Infantil, Expressão Corporal e Ginástica Ritmica.",
+      "Se quiser, posso te ajudar a escolher a melhor opção."
     ],
     cta: "schedule"
   },
   {
     keywords: ["aula teste", "visita", "agendar", "marcar", "experimentar"],
     messages: [
-      "Podemos marcar uma visita ou aula teste :)",
+      "Podemos marcar uma visita ou aula teste 😊",
       "Assim a equipe avalia a melhor turma para o aluno.",
-      "Se quiser, eu ja posso iniciar o agendamento."
+      "Se quiser, eu já posso iniciar o agendamento."
     ],
     cta: "schedule"
   }
@@ -190,7 +190,7 @@ function isInCooldown(session) {
 }
 
 function isMainMenuOption(text) {
-  return ["1", "2", "3", "4", "5", "6", "7", "8"].includes(text);
+  return ["1", "2", "3", "4", "5", "6", "7", "8", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"].includes(text);
 }
 
 function findHelpAnswer(text) {
@@ -223,9 +223,12 @@ async function sendMainMenu(phone, session, forceImage = false) {
   }
 
   await safeSend(() => sendText(phone, MAIN_MENU_MESSAGE));
-  return updateSession(phone, {
+  
+  // Use clearSession to ensure data is completely wiped when returning to menu
+  return clearSession(phone, {
     state: STATES.MAIN_MENU,
-    greeted: true
+    greeted: true,
+    cooldownUntil: null
   });
 }
 
@@ -247,7 +250,7 @@ async function startVisitFlow(phone) {
   return safeSend(() =>
     sendText(
       phone,
-      "Perfeito! Vamos marcar sua visita/aula teste :)\n\nPrimeiro, me informe o nome e sobrenome do responsavel.\n\n" +
+      "Perfeito! Vamos marcar sua visita/aula teste 😊\n\nPrimeiro, me informe o nome e sobrenome do responsavel.\n\n" +
         MENU_HINT
     )
   );
@@ -256,8 +259,10 @@ async function startVisitFlow(phone) {
 async function handleMainMenu(phone, text) {
   switch (text) {
     case "1":
+    case "1️⃣":
       return startVisitFlow(phone);
     case "2":
+    case "2️⃣":
       await safeSend(() =>
         sendText(
           phone,
@@ -278,6 +283,7 @@ async function handleMainMenu(phone, text) {
       );
       return updateSession(phone, { state: STATES.WAITING_CONFIRM_VISIT });
     case "3":
+    case "3️⃣":
       await safeSend(() =>
         sendText(
           phone,
@@ -292,10 +298,11 @@ async function handleMainMenu(phone, text) {
       );
       return updateSession(phone, { state: STATES.WAITING_CONFIRM_VISIT });
     case "4":
+    case "4️⃣":
       await safeSend(() =>
         sendText(
           phone,
-          "Consigo te passar os valores certinho :)\n\nAntes, qual modalidade voce quer?"
+          "Consigo te passar os valores certinho 😊\n\nAntes, qual modalidade voce quer?"
         )
       );
       await safeSend(() =>
@@ -309,6 +316,7 @@ async function handleMainMenu(phone, text) {
         data: { confirmContext: "values" }
       });
     case "5":
+    case "5️⃣":
       await safeSend(() =>
         sendText(
           phone,
@@ -329,6 +337,7 @@ async function handleMainMenu(phone, text) {
       );
       return updateSession(phone, { state: STATES.WAITING_CONFIRM_VISIT });
     case "6":
+    case "6️⃣":
       await safeSend(() =>
         sendText(
           phone,
@@ -349,6 +358,7 @@ async function handleMainMenu(phone, text) {
       );
       return updateSession(phone, { state: STATES.WAITING_CONFIRM_VISIT });
     case "7":
+    case "7️⃣":
       await safeSend(() =>
         sendText(phone, "O fardamento e exclusivo da companhia.\n\nValor: R$ 210,00")
       );
@@ -366,11 +376,12 @@ async function handleMainMenu(phone, text) {
       );
       return updateSession(phone, { state: STATES.WAITING_CONFIRM_VISIT });
     case "8":
+    case "8️⃣":
       await updateSession(phone, { state: STATES.WAITING_OTHER_QUESTION });
       return safeSend(() =>
         sendText(
           phone,
-          "Claro :)\n\nMe diga rapidamente qual e a sua duvida."
+          "Claro 😊\n\nMe diga rapidamente qual e a sua duvida."
         )
       );
     default:
@@ -379,11 +390,11 @@ async function handleMainMenu(phone, text) {
 }
 
 async function handleConfirmVisit(phone, text, session) {
-  if (text === "1") {
+  if (text === "1" || text === "1️⃣") {
     return startVisitFlow(phone);
   }
 
-  if (text === "2" && session.data.confirmContext === "values") {
+  if ((text === "2" || text === "2️⃣") && session.data.confirmContext === "values") {
     await safeSend(() =>
       sendText(
         phone,
@@ -451,7 +462,7 @@ async function handlePriceModality(phone, text) {
     await safeSend(() =>
       sendText(
         phone,
-        "Sem problema :)\n\nNa visita, nossa equipe pode te orientar sobre a melhor modalidade."
+        "Sem problema 😊\n\nNa visita, nossa equipe pode te orientar sobre a melhor modalidade."
       )
     );
   }
@@ -495,7 +506,7 @@ async function handleOtherQuestion(phone, incomingText) {
 }
 
 async function handleAttendantConfirm(phone, text, session) {
-  if (text === "1" || text === "sim") {
+  if (text === "1" || text === "1️⃣" || text === "sim") {
     if (session.data.attendantFlowType === "attendant") {
       await safeSend(() =>
         sendInternalNotification(
@@ -509,7 +520,7 @@ async function handleAttendantConfirm(phone, text, session) {
       await safeSend(() =>
         sendText(
           phone,
-          "Certo! Encaminhei sua duvida para um atendente.\n\nAssim que possivel, alguem da equipe vai te responder :)"
+          "Certo! Encaminhei sua duvida para um atendente.\n\nAssim que possivel, alguem da equipe vai te responder 😊"
         )
       );
       await finishFlow(phone);
@@ -519,7 +530,7 @@ async function handleAttendantConfirm(phone, text, session) {
     return startVisitFlow(phone);
   }
 
-  if (text === "2") {
+  if (text === "2" || text === "2️⃣") {
     if (session.data.attendantFlowType === "attendant") {
       const cleared = await clearSession(phone);
       return sendMainMenu(phone, cleared, true);
@@ -537,14 +548,14 @@ async function handleAttendantConfirm(phone, text, session) {
     await safeSend(() =>
       sendText(
         phone,
-        "Certo! Encaminhei sua duvida para um atendente.\n\nAssim que possivel, alguem da equipe vai te responder :)"
+        "Certo! Encaminhei sua duvida para um atendente.\n\nAssim que possivel, alguem da equipe vai te responder 😊"
       )
     );
     await finishFlow(phone);
     return null;
   }
 
-  if (text === "3") {
+  if (text === "3" || text === "3️⃣") {
     const cleared = await clearSession(phone);
     return sendMainMenu(phone, cleared, true);
   }
@@ -568,7 +579,12 @@ async function handleMessage(phone, incomingText) {
   let session = await getSession(phone);
 
   if (isResetCommand(text)) {
-    session = await clearSession(phone);
+    session = await clearSession(phone, {
+      state: STATES.MAIN_MENU,
+      greeted: false,
+      cooldownUntil: null,
+      data: {}
+    });
     return sendMainMenu(phone, session, true);
   }
 
@@ -711,7 +727,7 @@ async function handleMessage(phone, incomingText) {
       await safeSend(() =>
         sendText(
           phone,
-          "Pronto! Sua solicitacao foi registrada :)\n\nNossa equipe vai conferir a agenda e confirmar o melhor horario."
+          "Pronto! Sua solicitacao foi registrada 😊\n\nNossa equipe vai conferir a agenda e confirmar o melhor horario."
         )
       );
       await safeSend(() =>
