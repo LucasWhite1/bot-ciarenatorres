@@ -1,49 +1,109 @@
-# WhatsApp Bot - Evolution API
+# Bot Cia. Renato Torres
 
-Este é um bot simples de WhatsApp utilizando a Evolution API v2.
+Bot de WhatsApp em Node.js + Express, integrado com a Evolution API, pronto para deploy em VPS com Easypanel.
 
-## Configuração
+## O que este projeto faz
 
-1. O projeto já está configurado com suas credenciais no arquivo `.env`.
-2. Instale as dependências:
-   ```bash
-   npm install
-   ```
+- Recebe mensagens do WhatsApp via webhook da Evolution API.
+- Responde com menu automático.
+- Qualifica o lead antes de falar com atendente.
+- Coleta dados para visita ou aula teste.
+- Envia resumo interno do lead para um número configurado.
+- Espera 1 hora para reenviar a saudação inicial após o fim do fluxo.
+- Pode salvar sessões em Redis, com fallback em memória.
+- Possui rota protegida para aviso de mensalidade do sistema.
+- Está pronto para rodar com Docker.
 
-## Como Usar
+## Como configurar o `.env`
 
-### 1. Iniciar o Servidor Local
-Para rodar o bot localmente:
+Copie o arquivo de exemplo:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Preencha os dados da Evolution API e do negócio.
+
+### Redis
+
+Para usar Redis:
+
+```env
+REDIS_ENABLED=true
+REDIS_URL=redis://redis:6379
+REDIS_KEY_PREFIX=cia-renato-torres:session
+SESSION_TTL_SECONDS=86400
+MENU_COOLDOWN_MINUTES=60
+```
+
+Se não quiser Redis por enquanto:
+
+```env
+REDIS_ENABLED=false
+```
+
+## Como rodar localmente
+
 ```bash
+npm install
 npm start
 ```
-O servidor rodará por padrão na porta `3000`.
 
-### 2. Expor o Servidor (Webhook)
-Como o WhatsApp precisa enviar mensagens para o seu servidor, você precisa de uma URL pública. Recomendamos o uso do **ngrok**:
-```bash
-ngrok http 3000
-```
-Copie a URL `https` gerada (ex: `https://abcd-123.ngrok-free.app`).
+Teste:
 
-### 3. Configurar o Webhook na API
-Com a URL do ngrok em mãos, rode o comando de setup:
 ```bash
-npm run setup -- <SUA_URL_NGROK>/webhook
-```
-Exemplo:
-```bash
-npm run setup -- https://abcd-123.ngrok-free.app/webhook
+curl http://localhost:3000/health
 ```
 
-### 4. Testar o Bot
-Envie qualquer mensagem para o número `71993615509`.
-- Se digitar `1`, o bot responderá sobre a opção 1.
-- Se digitar `2`, o bot responderá sobre a opção 2.
-- Qualquer outra mensagem enviará o menu inicial.
+## Como configurar no Easypanel
 
-## Estrutura do Projeto
-- `index.js`: Lógica principal do bot e servidor Express.
-- `setup-webhook.js`: Script utilitário para configurar o webhook na Evolution API.
-- `check-status.js`: Verifica se a instância do WhatsApp está conectada.
-- `.env`: Armazena as chaves e URLs da API.
+1. Suba o projeto no GitHub.
+2. Crie o app no Easypanel apontando para o repositório.
+3. Configure a porta `3000`.
+4. Cadastre todas as variáveis do `.env`.
+5. Se usar Redis, crie um serviço Redis no Easypanel e ajuste `REDIS_URL`.
+
+## Como configurar o webhook na Evolution
+
+Use a URL pública:
+
+```text
+https://SEU_DOMINIO/webhook/evolution
+```
+
+Ative o evento de mensagens recebidas da instância.
+
+## Como testar o webhook no PowerShell
+
+```powershell
+$body = @{
+  data = @{
+    key = @{
+      remoteJid = "5571999999999@s.whatsapp.net"
+      fromMe = $false
+    }
+    message = @{
+      conversation = "oi"
+    }
+  }
+} | ConvertTo-Json -Depth 10
+
+Invoke-RestMethod `
+  -Method POST `
+  -Uri "http://localhost:3000/webhook/evolution" `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+## Como testar o alerta de mensalidade
+
+```bash
+curl -X POST http://localhost:3000/billing/send-reminder \
+  -H "Authorization: Bearer sua_senha_forte"
+```
+
+## Observações
+
+- Digitar `menu` ou `reiniciar` volta para o menu principal.
+- Após concluir o fluxo, o bot não reenvia a mensagem inicial por 1 hora.
+- Redis é a opção recomendada para produção porque mantém sessão entre reinícios e múltiplas réplicas.
