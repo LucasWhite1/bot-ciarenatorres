@@ -584,20 +584,34 @@ async function startSchedulingFlow(phone, purpose) {
 function resolveSchedule({ modality, shift, weekday, age }) {
   const ageGroup = getAgeGroup(age);
 
+  if (weekday === "sexta") {
+    return {
+      ok: false,
+      message:
+        "Na sexta trabalhamos com planejamentos agendados ou reposições. Escolha outro dia da semana para eu te sugerir um horário."
+    };
+  }
+
+  if (modality === "Ainda não sei") {
+    const scheduleText =
+      shift === "manhã"
+        ? `${getWeekdayLabel(weekday)}, no período da manhã`
+        : `${getWeekdayLabel(weekday)}, no período da tarde`;
+
+    return {
+      ok: true,
+      scheduleText,
+      classLabel: "Visita para conhecer",
+      ageGroupLabel: age ? `${age} anos` : "Não informado"
+    };
+  }
+
   if (!ageGroup && !["Teatro", "Musicalização"].includes(modality)) {
     return {
       ok: false,
       handoffToAttendant: true,
       message:
         "No momento não encontramos vaga disponível para essa idade nessa modalidade. Vou encaminhar seu atendimento para a secretaria verificar o que pode ser feito."
-    };
-  }
-
-  if (weekday === "sexta") {
-    return {
-      ok: false,
-      message:
-        "Na sexta trabalhamos com planejamentos agendados ou reposições. Escolha outro dia da semana para eu te sugerir um horário."
     };
   }
 
@@ -1178,18 +1192,30 @@ async function handleMessage(phone, incomingText) {
       return safeSend(() =>
         sendText(
           phone,
-          [
-            "📌 Pela idade do aluno, esta é a melhor sugestão:",
-            "",
-            `Turma: ${schedule.classLabel}`,
-            `Faixa etária: ${schedule.ageGroupLabel}`,
-            `Horário: ${schedule.scheduleText}`,
-            "",
-            "Esse horário funciona para você?",
-            "",
-            "1 - Sim",
-            "2 - Não"
-          ].join("\n")
+          modality === "Ainda não sei"
+            ? [
+                "📌 Perfeito! Como você ainda quer conhecer melhor as modalidades, esta é a melhor sugestão para a visita:",
+                "",
+                `Tipo: ${schedule.classLabel}`,
+                `Horário: ${schedule.scheduleText}`,
+                "",
+                "Esse horário funciona para você?",
+                "",
+                "1 - Sim",
+                "2 - Não"
+              ].join("\n")
+            : [
+                "📌 Pela idade do aluno, esta é a melhor sugestão:",
+                "",
+                `Turma: ${schedule.classLabel}`,
+                `Faixa etária: ${schedule.ageGroupLabel}`,
+                `Horário: ${schedule.scheduleText}`,
+                "",
+                "Esse horário funciona para você?",
+                "",
+                "1 - Sim",
+                "2 - Não"
+              ].join("\n")
         )
       );
     }
