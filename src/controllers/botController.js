@@ -7,6 +7,7 @@ const {
 } = require("../stores/sessionStore");
 const {
   sendText,
+  sendImageFromFile,
   sendInternalNotification
 } = require("../services/evolutionService");
 const normalizeText = require("../utils/normalizeText");
@@ -16,6 +17,12 @@ const {
 } = require("../utils/leadFormatter");
 
 const MENU_HINT = '🔁 Para voltar ao menu, digite "Menu".';
+const NILL_IMAGE_PATH =
+  "c:/Users/jlnn3/Downloads/ChatGPT Image 9 de mai. de 2026, 01_11_34.png";
+const WHO_WE_ARE_IMAGE_PATH =
+  "c:/Users/jlnn3/Downloads/ChatGPT Image 9 de mai. de 2026, 00_50_30.png";
+const TRIAL_CLASS_IMAGE_PATH =
+  "c:/Users/jlnn3/Downloads/ChatGPT Image 9 de mai. de 2026, 00_55_41.png";
 
 const LOCATION_MESSAGE = [
   "📍 *LOCALIZAÇÃO*",
@@ -522,6 +529,7 @@ async function sendIntroduction(phone) {
     data: {}
   });
 
+  await safeSend(() => sendImageFromFile(phone, NILL_IMAGE_PATH));
   return safeSend(() => sendText(phone, buildIntroMessage()));
 }
 
@@ -558,8 +566,9 @@ function resolveSchedule({ modality, shift, weekday, age }) {
   if (!ageGroup && !["Teatro", "Musicalização"].includes(modality)) {
     return {
       ok: false,
+      handoffToAttendant: true,
       message:
-        "Não consegui encaixar automaticamente essa idade na grade. Vou precisar que a secretaria confirme o melhor horário."
+        "No momento não encontramos vaga disponível para essa idade nessa modalidade. Vou encaminhar seu atendimento para a secretaria verificar o que pode ser feito."
     };
   }
 
@@ -620,6 +629,7 @@ function resolveSchedule({ modality, shift, weekday, age }) {
 
     return {
       ok: false,
+      handoffToAttendant: true,
       message: `Para ${modality}, preciso que a secretaria confirme o melhor encaixe para essa idade.`
     };
   }
@@ -682,6 +692,35 @@ function resolveSchedule({ modality, shift, weekday, age }) {
     classLabel: "Pré-preparatório",
     ageGroupLabel: "8 a 12 anos"
   };
+}
+
+async function handoffScheduleByAge(phone, session, modality) {
+  await safeSend(() =>
+    sendText(
+      phone,
+      `⚠️ No momento não encontramos vaga disponível para essa idade em *${modality}*.\n\nVou encaminhar seu atendimento para a secretaria verificar o que pode ser feito.`
+    )
+  );
+
+  await safeSend(() =>
+    sendInternalNotification(
+      formatAttendantSummary({
+        phone,
+        question:
+          `Cliente sem encaixe automático por idade. Modalidade: ${session.data.modality || "não informada"}. ` +
+          `Idade: ${session.data.studentAge || "não informada"}. ` +
+          `Período: ${session.data.shift || "não informado"}. ` +
+          `Dia desejado: ${session.data.preferredDay || "não informado"}.`
+      })
+    )
+  );
+
+  await updateSession(phone, {
+    state: STATES.MAIN_MENU,
+    greeted: true
+  });
+
+  return null;
 }
 
 async function notifyLead(phone, session, scheduleConfirmed) {
@@ -771,6 +810,10 @@ async function handleOtherQuestion(phone, incomingText) {
         autoHelpTopic: knowledgeEntry.topic
       }
     });
+
+    if (knowledgeEntry.topic === "aula_teste") {
+      await safeSend(() => sendImageFromFile(phone, TRIAL_CLASS_IMAGE_PATH));
+    }
 
     await safeSend(() => sendText(phone, knowledgeEntry.response));
 
@@ -989,6 +1032,7 @@ async function handleMessage(phone, incomingText) {
         }
       });
 
+      await safeSend(() => sendImageFromFile(phone, WHO_WE_ARE_IMAGE_PATH));
       return safeSend(() => sendText(phone, COMPANY_PRESENTATION));
     case STATES.WAITING_PROPOSAL_CONFIRM:
       if (!["1", "2", "sim", "nao"].includes(text)) {
@@ -1073,6 +1117,17 @@ async function handleMessage(phone, incomingText) {
       const schedule = resolveSchedule({ modality, shift, weekday, age });
 
       if (!schedule.ok) {
+        if (schedule.handoffToAttendant) {
+          await updateSession(phone, {
+            data: {
+              preferredDay: weekday
+            }
+          });
+
+          session = await getSession(phone);
+          return handoffScheduleByAge(phone, session, modality);
+        }
+
         return safeSend(() =>
           sendText(
             phone,
