@@ -7,7 +7,6 @@ const {
 } = require("../stores/sessionStore");
 const {
   sendText,
-  sendImage,
   sendInternalNotification
 } = require("../services/evolutionService");
 const normalizeText = require("../utils/normalizeText");
@@ -16,142 +15,205 @@ const {
   formatAttendantSummary
 } = require("../utils/leadFormatter");
 
-const MENU_HINT = 'Para voltar ao menu, digite "Menu".';
-const COOLDOWN_MS = env.menuCooldownMinutes * 60 * 1000;
+const MENU_HINT = '🔁 Para voltar ao menu, digite "Menu".';
 
-const MAIN_MENU_MESSAGE = [
-  "Ola! Tudo bem? 😊",
+const LOCATION_MESSAGE = [
+  "📍 *LOCALIZAÇÃO*",
   "",
-  "Sou o Nill, atendente virtual da Cia. Renato Torres.",
+  "Estr. do Coqueiro Grande, 8",
+  "Fazenda Grande 2 - Salvador/BA",
   "",
-  "Como posso te ajudar?",
-  "",
-  "1️⃣ Marcar visita/aula teste",
-  "2️⃣ Dias e horários",
-  "3️⃣ Localização",
-  "4️⃣ Valores e matrícula",
-  "5️⃣ Modalidades",
-  "6️⃣ Documentos para matrícula",
-  "7️⃣ Uniforme",
-  "8️⃣ Falar com atendente",
-  "",
-  'Digite "Menu" quando quiser voltar.'
+  "Referência: em frente ao Atacadão de Cajazeiras."
 ].join("\n");
 
-const SHORT_FALLBACK_MENU = [
-  "Posso te ajudar por aqui 😊",
+const COMPANY_PRESENTATION = [
+  "🌟 *QUEM SOMOS*",
   "",
-  "Escolha uma opção:",
+  "Uma escola atuante há mais de 10 anos em Salvador.",
   "",
-  "1️⃣ Marcar visita/aula teste",
-  "2️⃣ Horários",
-  "3️⃣ Localização",
-  "4️⃣ Valores",
-  "5️⃣ Modalidades",
-  "6️⃣ Falar com atendente",
+  "Com foco principal na participação direta dos alunos em diversas modalidades artísticas.",
   "",
-  'Digite "Menu" para voltar.'
+  "Nosso projeto reúne modalidades diversas dentro de uma proposta multidisciplinar.",
+  "",
+  "Incluindo:",
+  "• Ballet",
+  "• Jazz",
+  "• Teatro",
+  "• Musicalização",
+  "• Técnicas e habilidades corporais",
+  "• E muito mais",
+  "",
+  "Você entendeu nossa proposta?",
+  "",
+  "1 - Sim",
+  "2 - Não"
+].join("\n");
+
+const DOCUMENTS_MESSAGE = [
+  "📄 *DOCUMENTAÇÃO PARA MATRÍCULA*",
+  "",
+  "A matrícula deverá ser realizada em nossa companhia, munidos dos seguintes documentos:",
+  "",
+  "• RG (Registro Geral) do aluno e do responsável.",
+  "Em caso da falta do RG do aluno, pode ser apresentada a certidão de nascimento.",
+  "",
+  "• CPF (Cadastro de Pessoas Físicas) do aluno e do responsável.",
+  "",
+  "• Comprovante de residência.",
+  "",
+  "• Atestado / relatório médico de competência.",
+  "Em caso de recomendação ou observação médica necessária.",
+  "",
+  "• Declaração escolar.",
+  "Aplica-se aos alunos acima de 3 anos de idade matriculados em unidade de ensino regular.",
+  "",
+  MENU_HINT
+].join("\n");
+
+const UNIFORM_MESSAGE = [
+  "🩰 *FARDAMENTOS (UNIFORMES)*",
+  "",
+  "Confecção exclusiva, composta de material qualificado e confortável, confeccionado por empresas parceiras.",
+  "",
+  "Pode ser adquirido na própria companhia no valor de R$ 210,00.",
+  "Em caso de aquisição, pode ser parcelado no cartão de crédito ou pago via Pix, transferência e outras transações bancárias.",
+  "",
+  "Cores:",
+  "• Rosa - Baby Class",
+  "• Roxo - Pré-preparatório",
+  "• Preto - Graus",
+  "",
+  MENU_HINT
+].join("\n");
+
+const INVESTMENT_MESSAGE = [
+  "💰 *INVESTIMENTO MENSAL*",
+  "",
+  "O investimento mensal é de R$ 169,00.",
+  "",
+  "Estão inclusas todas as modalidades da grade, ou seja, o aluno fará todas as aulas por um valor único.",
+  "",
+  MENU_HINT
+].join("\n");
+
+const BUSINESS_HOURS_MESSAGE = [
+  "🕘 *DIAS E HORÁRIOS DE FUNCIONAMENTO*",
+  "",
+  "Segunda a sexta: 8h às 17h",
+  "Sábado: 8h às 13h",
+  "",
+  MENU_HINT
+].join("\n");
+
+const MAIN_MENU_MESSAGE = [
+  "✨ *VAMOS FAZER ASSIM...*",
+  "Agora diga-nos o que deseja:",
+  "",
+  "1 - Fazer visita",
+  "2 - Localização",
+  "3 - Documentos para matrícula",
+  "4 - Agendar aula teste",
+  "5 - Dias e horários de funcionamento",
+  "6 - Sobre o uniforme",
+  "7 - Investimento mensal",
+  "8 - Falar com a secretaria",
+  "9 - Nosso Instagram",
+  "",
+  MENU_HINT
 ].join("\n");
 
 const MODALITY_OPTIONS = {
   "1": "Ballet",
-  "2": "Jazz / Danca Moderna",
+  "2": "Jazz / Dança Moderna",
   "3": "Teatro",
-  "4": "Musicalizacao",
-  "5": "Expressao corporal",
+  "4": "Musicalização",
+  "5": "Expressão corporal",
   "6": "Ainda não sei"
 };
 
 const SHIFT_OPTIONS = {
-  "1": "Manha",
-  "2": "Tarde",
-  "3": "Sabado",
-  "4": "Ainda não sei"
+  "1": "manhã",
+  "2": "tarde",
+  manha: "manhã",
+  manhã: "manhã",
+  tarde: "tarde"
 };
 
-const ORIGIN_OPTIONS = {
-  "1": "Instagram",
-  "2": "Indicação",
-  "3": "WhatsApp",
-  "4": "Passando pelo local",
-  "5": "Outro"
+const WEEKDAY_OPTIONS = {
+  "1": "segunda",
+  "2": "terça",
+  "3": "quarta",
+  "4": "quinta",
+  "5": "sexta",
+  "6": "sábado",
+  segunda: "segunda",
+  "segunda-feira": "segunda",
+  terca: "terça",
+  "terca-feira": "terça",
+  terça: "terça",
+  "terça-feira": "terça",
+  quarta: "quarta",
+  "quarta-feira": "quarta",
+  quinta: "quinta",
+  "quinta-feira": "quinta",
+  sexta: "sexta",
+  "sexta-feira": "sexta",
+  sabado: "sábado",
+  sábado: "sábado"
 };
 
-const PRICE_MODALITY_OPTIONS = {
-  "1": "Ballet",
-  "2": "Jazz / Danca Moderna",
-  "3": "Teatro",
-  "4": "Musicalizacao Infantil",
-  "5": "Expressao Corporal / Ginastica Ritmica",
-  "6": "Ainda não sei"
-};
+const DAY_MENU_MESSAGE = [
+  "📅 *QUAL DIA DA SEMANA?*",
+  "",
+  "1 - Segunda",
+  "2 - Terça",
+  "3 - Quarta",
+  "4 - Quinta",
+  "5 - Sexta",
+  "6 - Sábado",
+  "",
+  "Você pode responder com o número ou com o nome do dia.",
+  "",
+  MENU_HINT
+].join("\n");
 
-const HELP_KEYWORD_RULES = [
-  {
-    keywords: ["horario", "horarios", "dias", "funciona", "turma", "turno", "horário", "horários"],
-    messages: [
-      "Nossa grade funciona assim:",
-      "Segundas e quartas: Ballet / Classico / Contemporaneo.",
-      "Tercas e quintas: Jazz Kids / Jazz Dance / Danca Moderna.",
-      "Sabados: Teatro e musicalização. Temos turmas pela manha e tarde."
-    ],
-    cta: "schedule"
-  },
-  {
-    keywords: ["localizacao", "endereco", "onde fica", "local", "cajazeiras", "mapa", "como chegar", "onde é"],
-    messages: [
-      "Estamos na Estr. do Coqueiro Grande, 8.",
-      "Fazenda Grande 2 - Salvador/BA.",
-      "Fica em frente ao Atacadao de Cajazeiras."
-    ],
-    cta: "schedule"
-  },
-  {
-    keywords: ["valor", "valores", "preco", "mensalidade", "matricula", "desconto", "matrícula", "preço", "custa"],
-    messages: [
-      "A mensalidade é R$ 169,00.",
-      "Temos 50% de desconto na matrícula.",
-      "Aluno matriculado que indica ganha 5% de desconto."
-    ],
-    cta: "schedule"
-  },
-  {
-    keywords: ["uniforme", "fardamento", "collant", "saia", "tiara"],
-    messages: [
-      "O fardamento é exclusivo e de uso pessoal.",
-      "Valor: R$ 210,00.",
-      "Inclui collant, saia, tiara e item promocional."
-    ],
-    cta: "schedule"
-  },
-  {
-    keywords: ["documento", "documentos", "cpf", "rg", "certidao", "certidão"],
-    messages: [
-      "Para matrícula, trazer RG ou certidão do aluno.",
-      "Também CPF do aluno e do responsável.",
-      "Leve comprovante de residência e declaração escolar."
-    ],
-    cta: "schedule"
-  },
-  {
-    keywords: ["modalidade", "ballet","balé", "jazz", "teatro", "musicalização", "expressão", "ginástica", "dança"],
-    messages: [
-      "Temos Ballet, Jazz Dance, Dança Moderna e Teatro.",
-      "Temos também Musicalização Infantil, Expressão Corporal e Ginástica Ritmica.",
-      "Se quiser, posso te ajudar a escolher a melhor opção."
-    ],
-    cta: "schedule"
-  },
-  {
-    keywords: ["aula teste", "visita", "agendar", "marcar", "experimentar"],
-    messages: [
-      "Podemos marcar uma visita ou aula teste 😊",
-      "Assim a equipe avalia a melhor turma para o aluno.",
-      "Se quiser, eu já posso iniciar o agendamento."
-    ],
-    cta: "schedule"
+function getAvailableDays(modality) {
+  if (modality === "Ballet") {
+    return ["terça", "quinta"];
   }
-];
+
+  if (modality === "Jazz / Dança Moderna") {
+    return ["segunda", "quarta"];
+  }
+
+  if (["Teatro", "Musicalização"].includes(modality)) {
+    return ["sábado"];
+  }
+
+  return ["segunda", "terça", "quarta", "quinta"];
+}
+
+function buildDayMenuMessage(modality) {
+  const availableDays = getAvailableDays(modality);
+  const dayLabels = {
+    segunda: "Segunda",
+    "terça": "Terça",
+    quarta: "Quarta",
+    quinta: "Quinta",
+    sexta: "Sexta",
+    "sábado": "Sábado"
+  };
+
+  return [
+    `📅 *DIAS DISPONÍVEIS PARA ${modality.toUpperCase()}*`,
+    "",
+    ...availableDays.map((day, index) => `${index + 1} - ${dayLabels[day]}`),
+    "",
+    "Você pode responder com o número ou com o nome do dia.",
+    "",
+    MENU_HINT
+  ].join("\n");
+}
 
 async function safeSend(callback) {
   try {
@@ -161,26 +223,20 @@ async function safeSend(callback) {
   }
 }
 
-function isResetCommand(text) {
-  return text === "menu" || text === "reiniciar";
+function isMenuCommand(text) {
+  return text === "menu";
+}
+
+function isRestartCommand(text) {
+  return text === "reiniciar";
 }
 
 function mapChoice(input, options) {
   return options[input] || null;
 }
 
-function inferAgeGroup(age) {
-  if (age >= 3 && age <= 6) return "Baby Class";
-  if (age >= 10 && age <= 13) return "Pre-preparatorio";
-  if (age >= 12 && age <= 18) return "Grau";
-  if (age >= 3 && age <= 8) return "Iniciacao teatral";
-  if (age >= 8 && age <= 13) return "Intermediario";
-  if (age >= 14 && age <= 20) return "Avancado";
-  return "Avaliacao na aula teste";
-}
-
 function getCooldownUntil() {
-  return new Date(Date.now() + COOLDOWN_MS).toISOString();
+  return new Date(Date.now() + env.menuCooldownMinutes * 60 * 1000).toISOString();
 }
 
 function isInCooldown(session) {
@@ -189,388 +245,360 @@ function isInCooldown(session) {
   );
 }
 
-function isMainMenuOption(text) {
-  return ["1", "2", "3", "4", "5", "6", "7", "8", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣"].includes(text);
+function getGreetingPeriod() {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-US", {
+      hour: "2-digit",
+      hour12: false,
+      timeZone: "America/Sao_Paulo"
+    }).format(new Date())
+  );
+
+  if (hour >= 5 && hour < 12) {
+    return "Bom dia";
+  }
+
+  if (hour >= 12 && hour < 18) {
+    return "Boa tarde";
+  }
+
+  return "Boa noite";
 }
 
-function findHelpAnswer(text) {
-  for (const rule of HELP_KEYWORD_RULES) {
-    if (rule.keywords.some((keyword) => text.includes(keyword))) {
-      return rule;
-    }
+function getAgeGroup(age) {
+  if (age >= 3 && age <= 7) {
+    return "Baby Class";
   }
+
+  if (age >= 8 && age <= 12) {
+    return "Pré-preparatório";
+  }
+
+  if (age >= 13 && age <= 20) {
+    return "Graus";
+  }
+
   return null;
 }
 
-async function sendHelpAnswer(phone, rule) {
-  for (const line of rule.messages) {
-    await safeSend(() => sendText(phone, line));
-  }
+function getWeekdayLabel(day) {
+  const labels = {
+    segunda: "segunda-feira",
+    "terça": "terça-feira",
+    quarta: "quarta-feira",
+    quinta: "quinta-feira",
+    sexta: "sexta-feira",
+    "sábado": "sábado"
+  };
 
-  return safeSend(() =>
-    sendText(
-      phone,
-      "Quer que eu inicie o agendamento agora?\n1️⃣ Sim\n2️⃣ Falar com atendente\n3️⃣ Menu"
-    )
-  );
+  return labels[day] || day;
 }
 
-async function sendMainMenu(phone, session, forceImage = false) {
-  const shouldSendImage = env.welcomeImageUrl && (!session.greeted || forceImage);
+function buildIntroMessage() {
+  return [
+    `👋 Olá, ${getGreetingPeriod()}! Sou o atendente virtual Nill. Vamos continuar com a nossa conversa?`,
+    "",
+    "1 - Sim",
+    "2 - Não"
+  ].join("\n");
+}
 
-  if (shouldSendImage) {
-    await safeSend(() => sendImage(phone, env.welcomeImageUrl, env.businessName));
-  }
-
+async function sendMainMenu(phone) {
   await safeSend(() => sendText(phone, MAIN_MENU_MESSAGE));
-  
-  // Use clearSession to ensure data is completely wiped when returning to menu
-  return clearSession(phone, {
+
+  return updateSession(phone, {
     state: STATES.MAIN_MENU,
-    greeted: true,
-    cooldownUntil: null
+    greeted: true
   });
 }
 
-async function finishFlow(phone) {
-  return clearSession(phone, {
-    state: STATES.MAIN_MENU,
-    greeted: true,
-    cooldownUntil: getCooldownUntil()
-  });
-}
-
-async function startVisitFlow(phone) {
+async function sendIntroduction(phone) {
   await updateSession(phone, {
-    state: STATES.WAITING_RESPONSIBLE_NAME,
+    state: STATES.WAITING_INTRO_CONFIRM,
     greeted: true,
     data: {}
   });
 
+  return safeSend(() => sendText(phone, buildIntroMessage()));
+}
+
+async function startSchedulingFlow(phone, purpose) {
+  await updateSession(phone, {
+    state: STATES.WAITING_MODALITY,
+    data: {
+      schedulingPurpose: purpose
+    }
+  });
+
   return safeSend(() =>
     sendText(
       phone,
-      "Perfeito! Vamos marcar sua visita/aula teste 😊\n\nPrimeiro, me informe o nome e sobrenome do responsavel.\n\n" +
+      [
+        "🎯 *CERTO! QUAL MODALIDADE TEM MAIS INTERESSE?*",
+        "",
+        "1 - Ballet",
+        "2 - Jazz / Dança Moderna",
+        "3 - Teatro",
+        "4 - Musicalização",
+        "5 - Expressão corporal",
+        "6 - Ainda não sei",
+        "",
         MENU_HINT
+      ].join("\n")
     )
   );
+}
+
+function resolveSchedule({ modality, shift, weekday, age }) {
+  const ageGroup = getAgeGroup(age);
+
+  if (!ageGroup && !["Teatro", "Musicalização"].includes(modality)) {
+    return {
+      ok: false,
+      message:
+        "Não consegui encaixar automaticamente essa idade na grade. Vou precisar que a secretaria confirme o melhor horário."
+    };
+  }
+
+  if (weekday === "sexta") {
+    return {
+      ok: false,
+      message:
+        "Na sexta trabalhamos com planejamentos agendados ou reposições. Escolha outro dia da semana para eu te sugerir um horário."
+    };
+  }
+
+  if (modality === "Ballet" && !["terça", "quinta"].includes(weekday)) {
+    return {
+      ok: false,
+      message: "Para Ballet, os dias disponíveis são terça e quinta. Escolha uma dessas opções:"
+    };
+  }
+
+  if (modality === "Jazz / Dança Moderna" && !["segunda", "quarta"].includes(weekday)) {
+    return {
+      ok: false,
+      message: "Para Jazz / Dança Moderna, os dias disponíveis são segunda e quarta. Escolha uma dessas opções:"
+    };
+  }
+
+  if (["Teatro", "Musicalização"].includes(modality)) {
+    if (weekday !== "sábado") {
+      return {
+        ok: false,
+        message: `Para ${modality}, o dia disponível é o sábado. Escolha essa opção para continuar.`
+      };
+    }
+
+    if (shift !== "manhã") {
+      return {
+        ok: false,
+        message: `Para ${modality}, no momento temos horários de sábado pela manhã.`
+      };
+    }
+
+    if (age >= 3 && age <= 7) {
+      return {
+        ok: true,
+        scheduleText: `${getWeekdayLabel(weekday)}, das 8h às 9h`,
+        classLabel: "Iniciação",
+        ageGroupLabel: "3 a 7 anos"
+      };
+    }
+
+    if (age >= 8 && age <= 13) {
+      return {
+        ok: true,
+        scheduleText: `${getWeekdayLabel(weekday)}, das 9h às 10h30`,
+        classLabel: "Intermediário",
+        ageGroupLabel: "8 a 13 anos"
+      };
+    }
+
+    return {
+      ok: false,
+      message: `Para ${modality}, preciso que a secretaria confirme o melhor encaixe para essa idade.`
+    };
+  }
+
+  if (weekday === "sábado") {
+    return {
+      ok: false,
+      message: "O sábado está reservado para Teatro e Musicalização. Escolha de segunda a quinta para continuar."
+    };
+  }
+
+  if (shift === "manhã") {
+    if (ageGroup === "Graus") {
+      return {
+        ok: true,
+        scheduleText: `${getWeekdayLabel(weekday)}, das 8h às 9h`,
+        classLabel: "Graus",
+        ageGroupLabel: "13 a 20 anos"
+      };
+    }
+
+    if (ageGroup === "Baby Class") {
+      return {
+        ok: true,
+        scheduleText: `${getWeekdayLabel(weekday)}, das 9h às 10h`,
+        classLabel: "Baby Class",
+        ageGroupLabel: "3 a 7 anos"
+      };
+    }
+
+    return {
+      ok: true,
+      scheduleText: `${getWeekdayLabel(weekday)}, das 9h às 10h`,
+      classLabel: "Pré-preparatório",
+      ageGroupLabel: "8 a 12 anos"
+    };
+  }
+
+  if (ageGroup === "Graus") {
+    return {
+      ok: true,
+      scheduleText: `${getWeekdayLabel(weekday)}, das 14h às 15h`,
+      classLabel: "Graus",
+      ageGroupLabel: "13 a 20 anos"
+    };
+  }
+
+  if (ageGroup === "Baby Class") {
+    return {
+      ok: true,
+      scheduleText: `${getWeekdayLabel(weekday)}, das 15h às 16h`,
+      classLabel: "Baby Class",
+      ageGroupLabel: "3 a 7 anos"
+    };
+  }
+
+  return {
+    ok: true,
+    scheduleText: `${getWeekdayLabel(weekday)}, das 16h às 17h`,
+    classLabel: "Pré-preparatório",
+    ageGroupLabel: "8 a 12 anos"
+  };
+}
+
+async function notifyLead(phone, session, scheduleConfirmed) {
+  await safeSend(() =>
+    sendInternalNotification(
+      formatLeadSummary({
+        ...session.data,
+        phone,
+        scheduleConfirmed: scheduleConfirmed ? "Sim" : "Não"
+      })
+    )
+  );
+}
+
+async function finalizeScheduling(phone, session, scheduleConfirmed) {
+  if (scheduleConfirmed) {
+    await safeSend(() =>
+      sendText(
+        phone,
+        "✅ Perfeito! Registrei seu interesse e encaminhei para nossa equipe."
+      )
+    );
+  } else {
+    await safeSend(() =>
+      sendText(
+        phone,
+        "📌 Sem problema! Vou encaminhar para a secretaria confirmar outro horário com você."
+      )
+    );
+  }
+
+  await safeSend(() => sendText(phone, LOCATION_MESSAGE));
+  await notifyLead(phone, session, scheduleConfirmed);
+
+  await updateSession(phone, {
+    state: STATES.MAIN_MENU,
+    greeted: true,
+    cooldownUntil: getCooldownUntil()
+  });
+
+  return null;
 }
 
 async function handleMainMenu(phone, text) {
   switch (text) {
     case "1":
-    case "1️⃣":
-      return startVisitFlow(phone);
+      return startSchedulingFlow(phone, "Fazer visita");
     case "2":
-    case "2️⃣":
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Nossa grade funciona assim:\n\nSegundas e quartas:\nBallet / Classico / Contemporaneo"
-        )
-      );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Tercas e quintas:\nJazz Kids / Jazz Dance / Danca Moderna\n\nSabados:\nTeatro e musicalizacao"
-        )
-      );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Temos turmas pela manha e tarde.\n\nQuer marcar uma visita/aula teste?\n1️⃣ Sim\n2️⃣ Voltar ao menu"
-        )
-      );
-      return updateSession(phone, { state: STATES.WAITING_CONFIRM_VISIT });
+      return safeSend(() => sendText(phone, `${LOCATION_MESSAGE}\n\n${MENU_HINT}`));
     case "3":
-    case "3️⃣":
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Estamos na:\n\nEstr. do Coqueiro Grande, 8\nFazenda Grande 2 - Salvador/BA"
-        )
-      );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Em frente ao Atacadao de Cajazeiras.\n\nQuer marcar uma visita?\n1️⃣ Sim\n2️⃣ Voltar ao menu"
-        )
-      );
-      return updateSession(phone, { state: STATES.WAITING_CONFIRM_VISIT });
+      return safeSend(() => sendText(phone, DOCUMENTS_MESSAGE));
     case "4":
-    case "4️⃣":
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Consigo te passar os valores certinho 😊\n\nAntes, qual modalidade voce quer?"
-        )
-      );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "1️⃣ Ballet\n2️⃣ Jazz / Danca Moderna\n3️⃣ Teatro\n4️⃣ Musicalizacao\n5️⃣ Expressao / Ginastica\n6️⃣ Ainda nao sei"
-        )
-      );
-      return updateSession(phone, {
-        state: STATES.WAITING_PRICE_MODALITY,
-        data: { confirmContext: "values" }
-      });
+      return startSchedulingFlow(phone, "Agendar aula teste");
     case "5":
-    case "5️⃣":
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Temos varias modalidades artisticas:\n\nBallet\nJazz Dance\nTeatro"
-        )
-      );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Musicalizacao Infantil\nGinastica Ritmica\nExpressao Corporal"
-        )
-      );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Quem se matricula em uma modalidade participa de outras atividades do projeto.\n\nQuer marcar uma aula teste?\n1️⃣ Sim\n2️⃣ Voltar ao menu"
-        )
-      );
-      return updateSession(phone, { state: STATES.WAITING_CONFIRM_VISIT });
+      return safeSend(() => sendText(phone, BUSINESS_HOURS_MESSAGE));
     case "6":
-    case "6️⃣":
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Para matricula, trazer:\n\nRG ou certidao do aluno\nCPF do aluno e responsavel"
-        )
-      );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Comprovante de residencia\nDeclaracao escolar\nAtestado/relatorio medico, se necessario"
-        )
-      );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Quer marcar uma visita antes da matricula?\n1️⃣ Sim\n2️⃣ Voltar ao menu"
-        )
-      );
-      return updateSession(phone, { state: STATES.WAITING_CONFIRM_VISIT });
+      return safeSend(() => sendText(phone, UNIFORM_MESSAGE));
     case "7":
-    case "7️⃣":
-      await safeSend(() =>
-        sendText(phone, "O fardamento e exclusivo da companhia.\n\nValor: R$ 210,00")
-      );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Inclui collant, saia, tiara e item promocional.\n\nPode pagar via Pix, cartao ou transferencia."
-        )
-      );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Quer saber sobre a aula teste?\n1️⃣ Sim\n2️⃣ Voltar ao menu"
-        )
-      );
-      return updateSession(phone, { state: STATES.WAITING_CONFIRM_VISIT });
+      return safeSend(() => sendText(phone, INVESTMENT_MESSAGE));
     case "8":
-    case "8️⃣":
-      await updateSession(phone, { state: STATES.WAITING_OTHER_QUESTION });
+      await updateSession(phone, {
+        state: STATES.WAITING_OTHER_QUESTION
+      });
       return safeSend(() =>
-        sendText(
-          phone,
-          "Claro 😊\n\nMe diga rapidamente qual e a sua duvida."
-        )
+        sendText(phone, "💬 Claro! Me diga rapidamente qual é a sua dúvida.")
+      );
+    case "9":
+      return safeSend(() =>
+        sendText(phone, `📲 Nosso Instagram:\nhttps://www.instagram.com/ciarenatotorres/\n\n${MENU_HINT}`)
       );
     default:
-      return safeSend(() => sendText(phone, SHORT_FALLBACK_MENU));
+      return safeSend(() =>
+        sendText(phone, '⚠️ Responda com uma opção de 1 a 9 ou digite "Menu".')
+      );
   }
 }
 
-async function handleConfirmVisit(phone, text, session) {
-  if (text === "1" || text === "1️⃣") {
-    return startVisitFlow(phone);
-  }
-
-  if ((text === "2" || text === "2️⃣") && session.data.confirmContext === "values") {
-    await safeSend(() =>
-      sendText(
-        phone,
-        "Para matricula, trazer:\n\nRG ou certidao do aluno\nCPF do aluno e responsavel"
-      )
-    );
-    await safeSend(() =>
-      sendText(
-        phone,
-        "Comprovante de residencia\nDeclaracao escolar\nAtestado/relatorio medico, se necessario"
-      )
-    );
-    return sendMainMenu(phone, session);
-  }
-
-  return sendMainMenu(phone, session);
-}
-
-async function handlePriceModality(phone, text) {
-  const modality = mapChoice(text, PRICE_MODALITY_OPTIONS);
-
-  if (!modality) {
-    return safeSend(() =>
-      sendText(phone, "Escolha uma opcao de 1 a 6, por favor.")
-    );
-  }
-
+async function handleOtherQuestion(phone, incomingText) {
   await updateSession(phone, {
-    state: STATES.WAITING_CONFIRM_VISIT,
+    state: STATES.WAITING_ATTENDANT_CONFIRM,
     data: {
-      confirmContext: "values",
-      priceModality: modality
+      pendingQuestion: incomingText.trim()
     }
   });
-
-  await safeSend(() =>
-    sendText(
-      phone,
-      "Nossa mensalidade e R$ 169,00.\n\nNela, o aluno participa das atividades do projeto com acompanhamento artistico."
-    )
-  );
-  await safeSend(() =>
-    sendText(
-      phone,
-      "Tambem temos 50% de desconto na matricula.\n\nAluno matriculado que indica ganha 5% de desconto."
-    )
-  );
-
-  if (modality === "Ballet") {
-    await safeSend(() =>
-      sendText(
-        phone,
-        "No Ballet, o fardamento e exclusivo e de uso pessoal.\n\nEle deve ser solicitado em ate 15 dias apos a matricula."
-      )
-    );
-    await safeSend(() =>
-      sendText(
-        phone,
-        "Valor do fardamento: R$ 210,00.\n\nInclui collant, saia, tiara e item promocional."
-      )
-    );
-  }
-
-  if (modality === "Ainda nao sei") {
-    await safeSend(() =>
-      sendText(
-        phone,
-        "Sem problema 😊\n\nNa visita, nossa equipe pode te orientar sobre a melhor modalidade."
-      )
-    );
-  }
 
   return safeSend(() =>
     sendText(
       phone,
-      "Quer marcar uma visita/aula teste?\n1️⃣ Sim\n2️⃣ Ver documentos\n3️⃣ Voltar ao menu"
+      "📨 Deseja que eu encaminhe essa dúvida para a secretaria?\n\n1 - Sim\n2 - Não"
     )
   );
 }
 
-async function handleOtherQuestion(phone, incomingText) {
-  const normalizedQuestion = normalizeText(incomingText);
-  const matchedRule = findHelpAnswer(normalizedQuestion);
-
-  if (!matchedRule) {
-    await updateSession(phone, {
-      state: STATES.WAITING_ATTENDANT_CONFIRM,
-      data: { pendingQuestion: incomingText.trim(), attendantFlowType: "attendant" }
-    });
-
-    return safeSend(() =>
-      sendText(
-        phone,
-        "Nao encontrei uma resposta exata por aqui.\n\nQuer falar com um atendente?\n1️⃣ Sim\n2️⃣ Voltar ao menu"
-      )
-    );
-  }
-
-  await updateSession(phone, {
-    state: STATES.WAITING_ATTENDANT_CONFIRM,
-    data: {
-      pendingQuestion: incomingText.trim(),
-      suggestedAnswer: matchedRule.messages.join(" "),
-      attendantFlowType: matchedRule.cta || "schedule"
-    }
-  });
-
-  return sendHelpAnswer(phone, matchedRule);
-}
-
 async function handleAttendantConfirm(phone, text, session) {
-  if (text === "1" || text === "1️⃣" || text === "sim") {
-    if (session.data.attendantFlowType === "attendant") {
-      await safeSend(() =>
-        sendInternalNotification(
-          formatAttendantSummary({
-            phone,
-            question: session.data.pendingQuestion || "Cliente pediu atendente."
-          }),
-          env.attendantNumber
-        )
-      );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Certo! Encaminhei sua duvida para um atendente.\n\nAssim que possivel, alguem da equipe vai te responder 😊"
-        )
-      );
-      await finishFlow(phone);
-      return null;
-    }
-
-    return startVisitFlow(phone);
-  }
-
-  if (text === "2" || text === "2️⃣") {
-    if (session.data.attendantFlowType === "attendant") {
-      const cleared = await clearSession(phone);
-      return sendMainMenu(phone, cleared, true);
-    }
-
+  if (text === "1" || text === "sim") {
     await safeSend(() =>
       sendInternalNotification(
         formatAttendantSummary({
           phone,
-          question: session.data.pendingQuestion || "Cliente pediu atendente."
-        }),
-        env.attendantNumber
+          question: session.data.pendingQuestion || "Cliente pediu secretaria."
+        })
       )
     );
+
     await safeSend(() =>
       sendText(
         phone,
-        "Certo! Encaminhei sua duvida para um atendente.\n\nAssim que possivel, alguem da equipe vai te responder 😊"
+        "✅ Pronto! Encaminhei sua mensagem para a secretaria. Assim que possível, a equipe vai falar com você."
       )
     );
-    await finishFlow(phone);
+
     return null;
   }
 
-  if (text === "3" || text === "3️⃣") {
-    const cleared = await clearSession(phone);
-    return sendMainMenu(phone, cleared, true);
-  }
-
-  if (session.data.attendantFlowType === "attendant") {
-    return safeSend(() =>
-      sendText(phone, "Me responda com:\n1️⃣ Sim\n2️⃣ Voltar ao menu")
-    );
+  if (text === "2" || text === "nao") {
+    return sendMainMenu(phone);
   }
 
   return safeSend(() =>
-    sendText(
-      phone,
-      "Me responda com:\n1️⃣ Sim\n2️⃣ Falar com atendente\n3️⃣ Menu"
-    )
+    sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
   );
 }
 
@@ -578,98 +606,152 @@ async function handleMessage(phone, incomingText) {
   const text = normalizeText(incomingText);
   let session = await getSession(phone);
 
-  if (isResetCommand(text)) {
-    session = await clearSession(phone, {
+  if (isRestartCommand(text)) {
+    await clearSession(phone, {
+      state: STATES.MAIN_MENU,
+      greeted: false,
+      data: {}
+    });
+    return sendIntroduction(phone);
+  }
+
+  if (isMenuCommand(text)) {
+    await clearSession(phone, {
+      state: STATES.MAIN_MENU,
+      greeted: true,
+      cooldownUntil: null,
+      data: {}
+    });
+    return sendMainMenu(phone);
+  }
+
+  if (isInCooldown(session)) {
+    return null;
+  }
+
+  if (session.cooldownUntil) {
+    await clearSession(phone, {
       state: STATES.MAIN_MENU,
       greeted: false,
       cooldownUntil: null,
       data: {}
     });
-    return sendMainMenu(phone, session, true);
+    return sendIntroduction(phone);
   }
 
   if (!session.greeted) {
-    await sendMainMenu(phone, session, true);
-    return null;
-  }
-
-  if (isInCooldown(session) && session.state === STATES.MAIN_MENU) {
-    if (!isMainMenuOption(text)) {
-      return null;
-    }
-
-    await updateSession(phone, { cooldownUntil: null });
-    session = await getSession(phone);
+    return sendIntroduction(phone);
   }
 
   switch (session.state) {
-    case STATES.MAIN_MENU:
-      return handleMainMenu(phone, text);
+    case STATES.WAITING_INTRO_CONFIRM:
+      await updateSession(phone, {
+        state: STATES.WAITING_RESPONSIBLE_NAME,
+        data: {
+          introAnswer: text === "1" || text === "sim" ? "Sim" : "Não"
+        }
+      });
+      return safeSend(() =>
+        sendText(
+          phone,
+          `✨ Vamos lá! Antes, diga-nos o nome e o sobrenome do responsável.\n\n${MENU_HINT}`
+        )
+      );
     case STATES.WAITING_RESPONSIBLE_NAME:
       await updateSession(phone, {
         state: STATES.WAITING_STUDENT_NAME,
-        data: { responsibleName: incomingText.trim() }
+        data: {
+          responsibleName: incomingText.trim()
+        }
       });
       return safeSend(() =>
-        sendText(phone, "Agora me informe o nome e sobrenome do aluno.\n\n" + MENU_HINT)
+        sendText(phone, `👤 Agora, o nome e o sobrenome do aluno.\n\n${MENU_HINT}`)
       );
     case STATES.WAITING_STUDENT_NAME:
       await updateSession(phone, {
         state: STATES.WAITING_STUDENT_AGE,
-        data: { studentName: incomingText.trim() }
+        data: {
+          studentName: incomingText.trim()
+        }
       });
       return safeSend(() =>
-        sendText(phone, "Quantos anos o aluno tem?\n\n" + MENU_HINT)
+        sendText(phone, `🎂 Agora me informe a idade.\n\n${MENU_HINT}`)
       );
     case STATES.WAITING_STUDENT_AGE: {
       const age = Number(incomingText.replace(/\D/g, ""));
 
       if (!age) {
         return safeSend(() =>
-          sendText(phone, "Me informe apenas a idade em numero, por favor.")
+          sendText(phone, "⚠️ Informe apenas a idade em número, por favor.")
         );
       }
 
       await updateSession(phone, {
-        state: STATES.WAITING_MODALITY,
+        state: STATES.WAITING_KNOWS_COMPANY,
         data: {
-          studentAge: age,
-          suggestedGroup: inferAgeGroup(age)
+          studentAge: age
         }
       });
 
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Certo! Pela idade, vamos indicar o grupo mais adequado apos a aula teste."
-        )
-      );
-
+      const responsibleName = session.data.responsibleName || "responsável";
       return safeSend(() =>
         sendText(
           phone,
-          "Qual modalidade tem mais interesse?\n\n1️⃣ Ballet\n2️⃣ Jazz / Danca Moderna\n3️⃣ Teatro\n4️⃣ Musicalizacao\n5️⃣ Expressao corporal\n6️⃣ Ainda nao sei"
+          `🤝 Prazer, ${responsibleName}!\nVocê já conhece nossa companhia?\n\n1 - Sim\n2 - Não`
         )
       );
     }
+    case STATES.WAITING_KNOWS_COMPANY:
+      if (!["1", "2", "sim", "nao"].includes(text)) {
+        return safeSend(() =>
+          sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
+        );
+      }
+
+      await updateSession(phone, {
+        state: STATES.WAITING_PROPOSAL_CONFIRM,
+        data: {
+          knowsCompany: text === "1" || text === "sim" ? "Sim" : "Não"
+        }
+      });
+
+      return safeSend(() => sendText(phone, COMPANY_PRESENTATION));
+    case STATES.WAITING_PROPOSAL_CONFIRM:
+      if (!["1", "2", "sim", "nao"].includes(text)) {
+        return safeSend(() =>
+          sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
+        );
+      }
+
+      await updateSession(phone, {
+        data: {
+          understoodProposal: text === "1" || text === "sim" ? "Sim" : "Não"
+        }
+      });
+
+      return sendMainMenu(phone);
+    case STATES.MAIN_MENU:
+      return handleMainMenu(phone, text);
     case STATES.WAITING_MODALITY: {
       const modality = mapChoice(text, MODALITY_OPTIONS);
 
       if (!modality) {
         return safeSend(() =>
-          sendText(phone, "Escolha uma opcao de 1 a 6, por favor.")
+          sendText(phone, "⚠️ Escolha uma opção de 1 a 6, por favor.")
         );
       }
 
       await updateSession(phone, {
         state: STATES.WAITING_SHIFT,
-        data: { modality }
+        data: {
+          modality
+        }
       });
 
       return safeSend(() =>
         sendText(
           phone,
-          "Qual turno seria melhor?\n\n1️⃣ Manha\n2️⃣ Tarde\n3️⃣ Sabado\n4️⃣ Ainda nao sei"
+          `🕘 *QUAL PERÍODO DESEJA?*\n\n1 - Manhã\n2 - Tarde\n\n${MENU_HINT}`
         )
       );
     }
@@ -678,79 +760,106 @@ async function handleMessage(phone, incomingText) {
 
       if (!shift) {
         return safeSend(() =>
-          sendText(phone, "Escolha uma opcao de 1 a 4, por favor.")
+          sendText(phone, "⚠️ Responda com 1 ou 2.\n\n1 - Manhã\n2 - Tarde")
         );
       }
 
       await updateSession(phone, {
         state: STATES.WAITING_VISIT_DAY,
-        data: { shift }
+        data: {
+          shift
+        }
       });
 
-      return safeSend(() =>
-        sendText(
-          phone,
-          "Qual melhor dia para visita ou aula teste?\nPode responder com o dia da semana."
-        )
-      );
+      return safeSend(() => sendText(phone, buildDayMenuMessage(session.data.modality)));
     }
-    case STATES.WAITING_VISIT_DAY:
-      await updateSession(phone, {
-        state: STATES.WAITING_ORIGIN,
-        data: { visitDay: incomingText.trim() }
-      });
-      return safeSend(() =>
-        sendText(
-          phone,
-          "Como voce conheceu a Cia. Renato Torres?\n\n1️⃣ Instagram\n2️⃣ Indicacao\n3️⃣ WhatsApp\n4️⃣ Passando pelo local\n5️⃣ Outro"
-        )
+    case STATES.WAITING_VISIT_DAY: {
+      const availableDays = getAvailableDays(session.data.modality);
+      const numericDayOptions = Object.fromEntries(
+        availableDays.map((day, index) => [String(index + 1), day])
       );
-    case STATES.WAITING_ORIGIN: {
-      const origin = mapChoice(text, ORIGIN_OPTIONS);
+      const weekday =
+        mapChoice(text, numericDayOptions) ||
+        (availableDays.includes(mapChoice(text, WEEKDAY_OPTIONS))
+          ? mapChoice(text, WEEKDAY_OPTIONS)
+          : null);
 
-      if (!origin) {
+      if (!weekday) {
         return safeSend(() =>
-          sendText(phone, "Escolha uma opcao de 1 a 5, por favor.")
+          sendText(
+            phone,
+            `⚠️ Escolha um dia válido.\n\n${buildDayMenuMessage(session.data.modality)}`
+          )
         );
       }
 
-      const updated = await updateSession(phone, {
-        state: STATES.MAIN_MENU,
-        data: { origin }
-      });
-      const lead = {
-        ...updated.data,
-        origin,
-        phone
-      };
+      const modality = session.data.modality;
+      const shift = session.data.shift;
+      const age = Number(session.data.studentAge);
+      const schedule = resolveSchedule({ modality, shift, weekday, age });
 
-      await safeSend(() =>
+      if (!schedule.ok) {
+        return safeSend(() =>
+          sendText(
+            phone,
+            `${schedule.message}\n\n${buildDayMenuMessage(session.data.modality)}`
+          )
+        );
+      }
+
+      await updateSession(phone, {
+        state: STATES.WAITING_SCHEDULE_CONFIRM,
+        data: {
+          preferredDay: weekday,
+          suggestedSchedule: schedule.scheduleText,
+          suggestedClassLabel: schedule.classLabel,
+          suggestedAgeGroup: schedule.ageGroupLabel
+        }
+      });
+
+      return safeSend(() =>
         sendText(
           phone,
-          "Pronto! Sua solicitacao foi registrada 😊\n\nNossa equipe vai conferir a agenda e confirmar o melhor horario."
+          [
+            `📌 Pela idade do aluno, a melhor sugestão para *${modality}* é:`,
+            "",
+            `Turma: ${schedule.classLabel}`,
+            `Faixa etária: ${schedule.ageGroupLabel}`,
+            `Horário: ${schedule.scheduleText}`,
+            "",
+            "Esse horário funciona para você?",
+            "",
+            "1 - Sim",
+            "2 - Não"
+          ].join("\n")
         )
       );
-      await safeSend(() =>
-        sendText(
-          phone,
-          "Cia. Renato Torres\nEstr. do Coqueiro Grande, 8\nEm frente ao Atacadao de Cajazeiras"
-        )
-      );
-      await safeSend(() => sendInternalNotification(formatLeadSummary(lead)));
-      await finishFlow(phone);
-      return null;
     }
+    case STATES.WAITING_SCHEDULE_CONFIRM:
+      if (text === "1" || text === "sim") {
+        session = await getSession(phone);
+        return finalizeScheduling(phone, session, true);
+      }
+
+      if (text === "2" || text === "nao") {
+        session = await getSession(phone);
+        return finalizeScheduling(phone, session, false);
+      }
+
+      return safeSend(() =>
+        sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
+      );
     case STATES.WAITING_OTHER_QUESTION:
       return handleOtherQuestion(phone, incomingText);
     case STATES.WAITING_ATTENDANT_CONFIRM:
       return handleAttendantConfirm(phone, text, session);
-    case STATES.WAITING_CONFIRM_VISIT:
-      return handleConfirmVisit(phone, text, session);
-    case STATES.WAITING_PRICE_MODALITY:
-      return handlePriceModality(phone, text);
     default:
-      session = await clearSession(phone);
-      return sendMainMenu(phone, session, true);
+      await clearSession(phone, {
+        state: STATES.MAIN_MENU,
+        greeted: false,
+        data: {}
+      });
+      return sendIntroduction(phone);
   }
 }
 
