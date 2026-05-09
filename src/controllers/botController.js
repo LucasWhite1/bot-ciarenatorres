@@ -177,6 +177,201 @@ const DAY_MENU_MESSAGE = [
   MENU_HINT
 ].join("\n");
 
+const KNOWLEDGE_BASE = [
+  {
+    topic: "mensalidade",
+    keywords: [
+      "valor",
+      "valores",
+      "mensalidade",
+      "mensal",
+      "matricula",
+      "matricula",
+      "preco",
+      "custa",
+      "boleto",
+      "pagamento",
+      "banco do brasil",
+      "dinheiro"
+    ],
+    response: [
+      "💰 *MENSALIDADE E MATRÍCULA*",
+      "",
+      "Inicialmente a mensalidade está no valor de *R$ 169,00*.",
+      "",
+      "O aluno matriculado em uma das modalidades terá em seu currículo as demais modalidades disponíveis, como Ballet, Jazz, Teatro, Dança Moderna, Musicalização e outras expressões.",
+      "",
+      "As mensalidades podem ser realizadas no formato de boletos bancários com convênio do Banco do Brasil.",
+      "",
+      "Por questões de segurança dos nossos alunos e colaboradores, *não recebemos valores em dinheiro* na companhia."
+    ].join("\n")
+  },
+  {
+    topic: "documentacao",
+    keywords: [
+      "documento",
+      "documentos",
+      "rg",
+      "cpf",
+      "certidao",
+      "certidão",
+      "comprovante",
+      "declaracao escolar",
+      "declaração escolar",
+      "atestado",
+      "relatorio medico",
+      "relatório médico"
+    ],
+    response: DOCUMENTS_MESSAGE
+  },
+  {
+    topic: "uniforme",
+    keywords: [
+      "uniforme",
+      "uniformes",
+      "fardamento",
+      "fardamentos",
+      "collant",
+      "saia",
+      "tiara",
+      "rosa",
+      "roxo",
+      "preto"
+    ],
+    response: [
+      "🩰 *FARDAMENTOS (UNIFORMES)*",
+      "",
+      "O fardamento é exclusivo e de uso pessoal, podendo ser adquirido na própria companhia.",
+      "",
+      "Ele deverá ser solicitado no prazo máximo de até 15 dias após a matrícula do aluno.",
+      "",
+      "Valor: *R$ 210,00*.",
+      "Compondo a base com: collant, saia, tiara e item promocional.",
+      "",
+      "Também temos a confecção exclusiva com material qualificado e confortável, podendo ser parcelado no cartão de crédito ou pago via Pix, transferências e outras transações bancárias.",
+      "",
+      "Cores de referência: Rosa, Roxo e Preto."
+    ].join("\n")
+  },
+  {
+    topic: "funcionamento",
+    keywords: [
+      "horario de funcionamento",
+      "horario administrativo",
+      "atendimento",
+      "funcionamento",
+      "horario",
+      "horarios",
+      "abre",
+      "fecha"
+    ],
+    response: [
+      "🕘 *HORÁRIO DE FUNCIONAMENTO (ATENDIMENTO AO PÚBLICO)*",
+      "",
+      "Nosso horário administrativo funciona das *8h às 18h*, de segunda a sexta.",
+      "",
+      "Aos sábados, funcionamos das *9h às 16h*."
+    ].join("\n")
+  },
+  {
+    topic: "agenda",
+    keywords: [
+      "agenda",
+      "grade",
+      "dias de aula",
+      "horario de aula",
+      "horarios das aulas",
+      "turma",
+      "turno",
+      "manha",
+      "manhã",
+      "tarde",
+      "sabado",
+      "sábado"
+    ],
+    response: [
+      "📚 *AGENDA SEMANAL*",
+      "",
+      "Para definir os horários das aulas, é importante entendermos a idade do aluno, sua disponibilidade e também sua experiência artística.",
+      "",
+      "Nossa grade funciona assim:",
+      "• Segundas e quartas: Ballet Clássico e Contemporâneo",
+      "• Terças e quintas: Jazz Kids / Jazz Dance / Dança Moderna",
+      "• Sábados: Iniciação teatral / Teatro intermediário",
+      "",
+      "Temos turnos de manhã e tarde, e as sextas-feiras funcionam como base de resoluções administrativas e reposições."
+    ].join("\n")
+  },
+  {
+    topic: "aula_teste",
+    keywords: [
+      "aula teste",
+      "aula experimental",
+      "experimental",
+      "avaliacao",
+      "avaliação",
+      "grupo especifico",
+      "grupo específico"
+    ],
+    response: [
+      "🎭 *AULA TESTE*",
+      "",
+      "O aluno será avaliado pelo profissional do dia, através das práticas e entendimento, a fim de conhecê-lo e encaminhá-lo para seu grupo específico.",
+      "",
+      "Exemplo: se o aluno tem 3 anos, fará aulas apenas no grupo da sua idade, como o Baby Class.",
+      "",
+      "Se o aluno já tiver alguma prática ou base em qualquer uma das modalidades, ele poderá ser encaminhado imediatamente para seu grupo específico, obedecendo os critérios avaliativos."
+    ].join("\n")
+  },
+  {
+    topic: "vestimenta",
+    keywords: [
+      "vestimenta",
+      "roupa",
+      "coque",
+      "rabo de cavalo",
+      "garrafinha",
+      "agua",
+      "água",
+      "legging",
+      "alcool gel",
+      "álcool gel"
+    ],
+    response: [
+      "👕 *VESTIMENTA PARA A AULA TESTE*",
+      "",
+      "Solicitamos que o aluno venha com roupa confortável, como calça legging, blusinha de algodão ou collant, além de uma meia comum de algodão.",
+      "",
+      "Manter os cabelos em formato de coque para Ballet e rabo de cavalo para Jazz e outras modalidades.",
+      "",
+      "Também orientamos portar sua própria garrafinha d'água e álcool gel.",
+      "",
+      "Observação: a vestimenta não deve conter botões, fivelas, cintos embutidos, brincos ou cordões."
+    ].join("\n")
+  },
+  {
+    topic: "agendamento",
+    keywords: [
+      "agendar",
+      "agendamento",
+      "visita",
+      "conhecer",
+      "marcar",
+      "aula experimental",
+      "aula teste"
+    ],
+    response: [
+      "📅 *AGENDAMENTO / AULA TESTE*",
+      "",
+      "Esse primeiro contato do aluno com a modalidade e com nossos professores é muito importante.",
+      "",
+      "Nele, o aluno passará por algumas avaliações e receberá o encaminhamento para seu grupo específico.",
+      "",
+      "Se preferir, também podemos agendar uma visita para você conhecer a companhia mais de perto."
+    ].join("\n")
+  }
+];
+
 function getAvailableDays(modality) {
   if (modality === "Ballet") {
     return ["terça", "quinta"];
@@ -233,6 +428,14 @@ function isRestartCommand(text) {
 
 function mapChoice(input, options) {
   return options[input] || null;
+}
+
+function findKnowledgeBaseEntry(text) {
+  return (
+    KNOWLEDGE_BASE.find((entry) =>
+      entry.keywords.some((keyword) => text.includes(normalizeText(keyword)))
+    ) || null
+  );
 }
 
 function getCooldownUntil() {
@@ -557,6 +760,28 @@ async function handleMainMenu(phone, text) {
 }
 
 async function handleOtherQuestion(phone, incomingText) {
+  const normalizedQuestion = normalizeText(incomingText);
+  const knowledgeEntry = findKnowledgeBaseEntry(normalizedQuestion);
+
+  if (knowledgeEntry) {
+    await updateSession(phone, {
+      state: STATES.WAITING_AUTO_HELP_CONFIRM,
+      data: {
+        pendingQuestion: incomingText.trim(),
+        autoHelpTopic: knowledgeEntry.topic
+      }
+    });
+
+    await safeSend(() => sendText(phone, knowledgeEntry.response));
+
+    return safeSend(() =>
+      sendText(
+        phone,
+        "❓ Isso tirou sua dúvida?\n\n1 - Sim\n2 - Não"
+      )
+    );
+  }
+
   await updateSession(phone, {
     state: STATES.WAITING_ATTENDANT_CONFIRM,
     data: {
@@ -567,8 +792,57 @@ async function handleOtherQuestion(phone, incomingText) {
   return safeSend(() =>
     sendText(
       phone,
-      "📨 Deseja que eu encaminhe essa dúvida para a secretaria?\n\n1 - Sim\n2 - Não"
+      "📨 Não encontrei uma resposta exata por aqui. Deseja que eu encaminhe essa dúvida para a secretaria?\n\n1 - Sim\n2 - Não"
     )
+  );
+}
+
+async function handleAutoHelpConfirm(phone, text, session) {
+  if (text === "1" || text === "sim") {
+    await updateSession(phone, {
+      state: STATES.WAITING_POST_HELP_SCHEDULE_CONFIRM
+    });
+
+    return safeSend(() =>
+      sendText(
+        phone,
+        "✨ Que bom! Você gostaria de agendar uma visita?\n\n1 - Sim\n2 - Não"
+      )
+    );
+  }
+
+  if (text === "2" || text === "nao") {
+    await updateSession(phone, {
+      state: STATES.WAITING_ATTENDANT_CONFIRM,
+      data: {
+        pendingQuestion: session.data.pendingQuestion || "Cliente pediu ajuda."
+      }
+    });
+
+    return safeSend(() =>
+      sendText(
+        phone,
+        "📨 Entendi. Deseja que eu encaminhe sua dúvida para a secretaria?\n\n1 - Sim\n2 - Não"
+      )
+    );
+  }
+
+  return safeSend(() =>
+    sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
+  );
+}
+
+async function handlePostHelpScheduleConfirm(phone, text) {
+  if (text === "1" || text === "sim") {
+    return startSchedulingFlow(phone, "Fazer visita");
+  }
+
+  if (text === "2" || text === "nao") {
+    return sendMainMenu(phone);
+  }
+
+  return safeSend(() =>
+    sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
   );
 }
 
@@ -851,6 +1125,10 @@ async function handleMessage(phone, incomingText) {
       );
     case STATES.WAITING_OTHER_QUESTION:
       return handleOtherQuestion(phone, incomingText);
+    case STATES.WAITING_AUTO_HELP_CONFIRM:
+      return handleAutoHelpConfirm(phone, text, session);
+    case STATES.WAITING_POST_HELP_SCHEDULE_CONFIRM:
+      return handlePostHelpScheduleConfirm(phone, text);
     case STATES.WAITING_ATTENDANT_CONFIRM:
       return handleAttendantConfirm(phone, text, session);
     default:
