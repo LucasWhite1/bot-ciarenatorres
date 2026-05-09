@@ -24,6 +24,8 @@ const WHO_WE_ARE_IMAGE_PATH =
   path.resolve(__dirname, "../../assets/images/quem-somos.png");
 const TRIAL_CLASS_IMAGE_PATH =
   path.resolve(__dirname, "../../assets/images/aula-teste.png");
+const MENU_IMAGE_PATH =
+  path.resolve(__dirname, "../../assets/images/menu-principal.png");
 
 const LOCATION_MESSAGE = [
   "📍 *LOCALIZAÇÃO*",
@@ -49,12 +51,22 @@ const COMPANY_PRESENTATION = [
   "• Teatro",
   "• Musicalização",
   "• Técnicas e habilidades corporais",
-  "• E muito mais",
-  "",
+  "• E muito mais"
+].join("\n");
+
+const COMPANY_PRESENTATION_CONFIRM = [
   "Você entendeu nossa proposta?",
   "",
   "1 - Sim",
   "2 - Não"
+].join("\n");
+
+const TRIAL_CLASS_MENU_MESSAGE = [
+  "🎭 *AULA TESTE*",
+  "",
+  "O aluno será avaliado pelo profissional do dia, através das práticas e entendimento, para ser encaminhado à turma mais adequada ao seu desenvolvimento.",
+  "",
+  "Vamos agendar a aula teste?"
 ].join("\n");
 
 const DOCUMENTS_MESSAGE = [
@@ -407,8 +419,13 @@ function buildDayMenuMessage(modality) {
     "sábado": "Sábado"
   };
 
+  const title =
+    modality && modality !== "Ainda não sei"
+      ? `📅 *DIAS DISPONÍVEIS PARA ${modality.toUpperCase()}*`
+      : "📅 *DIAS DISPONÍVEIS*";
+
   return [
-    `📅 *DIAS DISPONÍVEIS PARA ${modality.toUpperCase()}*`,
+    title,
     "",
     ...availableDays.map((day, index) => `${index + 1} - ${dayLabels[day]}`),
     "",
@@ -416,6 +433,10 @@ function buildDayMenuMessage(modality) {
     "",
     MENU_HINT
   ].join("\n");
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function safeSend(callback) {
@@ -515,7 +536,7 @@ function buildIntroMessage() {
 }
 
 async function sendMainMenu(phone) {
-  await safeSend(() => sendText(phone, MAIN_MENU_MESSAGE));
+  await safeSend(() => sendImageFromFile(phone, MENU_IMAGE_PATH, MAIN_MENU_MESSAGE));
 
   return updateSession(phone, {
     state: STATES.MAIN_MENU,
@@ -530,8 +551,7 @@ async function sendIntroduction(phone) {
     data: {}
   });
 
-  await safeSend(() => sendImageFromFile(phone, NILL_IMAGE_PATH));
-  return safeSend(() => sendText(phone, buildIntroMessage()));
+  return safeSend(() => sendImageFromFile(phone, NILL_IMAGE_PATH, buildIntroMessage()));
 }
 
 async function startSchedulingFlow(phone, purpose) {
@@ -774,6 +794,9 @@ async function handleMainMenu(phone, text) {
     case "3":
       return safeSend(() => sendText(phone, DOCUMENTS_MESSAGE));
     case "4":
+      await safeSend(() =>
+        sendImageFromFile(phone, TRIAL_CLASS_IMAGE_PATH, TRIAL_CLASS_MENU_MESSAGE)
+      );
       return startSchedulingFlow(phone, "Agendar aula teste");
     case "5":
       return safeSend(() => sendText(phone, BUSINESS_HOURS_MESSAGE));
@@ -813,10 +836,12 @@ async function handleOtherQuestion(phone, incomingText) {
     });
 
     if (knowledgeEntry.topic === "aula_teste") {
-      await safeSend(() => sendImageFromFile(phone, TRIAL_CLASS_IMAGE_PATH));
+      await safeSend(() =>
+        sendImageFromFile(phone, TRIAL_CLASS_IMAGE_PATH, knowledgeEntry.response)
+      );
+    } else {
+      await safeSend(() => sendText(phone, knowledgeEntry.response));
     }
-
-    await safeSend(() => sendText(phone, knowledgeEntry.response));
 
     return safeSend(() =>
       sendText(
@@ -1033,8 +1058,11 @@ async function handleMessage(phone, incomingText) {
         }
       });
 
-      await safeSend(() => sendImageFromFile(phone, WHO_WE_ARE_IMAGE_PATH));
-      return safeSend(() => sendText(phone, COMPANY_PRESENTATION));
+      await safeSend(() =>
+        sendImageFromFile(phone, WHO_WE_ARE_IMAGE_PATH, COMPANY_PRESENTATION)
+      );
+      await wait(3000);
+      return safeSend(() => sendText(phone, COMPANY_PRESENTATION_CONFIRM));
     case STATES.WAITING_PROPOSAL_CONFIRM:
       if (!["1", "2", "sim", "nao"].includes(text)) {
         return safeSend(() =>
@@ -1151,7 +1179,7 @@ async function handleMessage(phone, incomingText) {
         sendText(
           phone,
           [
-            `📌 Pela idade do aluno, a melhor sugestão para *${modality}* é:`,
+            "📌 Pela idade do aluno, esta é a melhor sugestão:",
             "",
             `Turma: ${schedule.classLabel}`,
             `Faixa etária: ${schedule.ageGroupLabel}`,
