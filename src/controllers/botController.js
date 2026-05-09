@@ -1,4 +1,5 @@
 const env = require("../config/env");
+const path = require("path");
 const {
   STATES,
   getSession,
@@ -18,11 +19,11 @@ const {
 
 const MENU_HINT = '🔁 Para voltar ao menu, digite "Menu".';
 const NILL_IMAGE_PATH =
-  "c:/Users/jlnn3/Downloads/ChatGPT Image 9 de mai. de 2026, 01_11_34.png";
+  path.resolve(__dirname, "../../assets/images/nill-atendente.png");
 const WHO_WE_ARE_IMAGE_PATH =
-  "c:/Users/jlnn3/Downloads/ChatGPT Image 9 de mai. de 2026, 00_50_30.png";
+  path.resolve(__dirname, "../../assets/images/quem-somos.png");
 const TRIAL_CLASS_IMAGE_PATH =
-  "c:/Users/jlnn3/Downloads/ChatGPT Image 9 de mai. de 2026, 00_55_41.png";
+  path.resolve(__dirname, "../../assets/images/aula-teste.png");
 
 const LOCATION_MESSAGE = [
   "📍 *LOCALIZAÇÃO*",
