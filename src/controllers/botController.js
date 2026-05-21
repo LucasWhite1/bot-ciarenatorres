@@ -531,7 +531,8 @@ function buildIntroMessage() {
     `👋 Olá, ${getGreetingPeriod()}! Sou o atendente virtual Nill. Vamos continuar com a nossa conversa?`,
     "",
     "1 - Sim",
-    "2 - Não"
+    "2 - Não",
+    "3 - Área do responsável"
   ].join("\n");
 }
 
@@ -582,7 +583,12 @@ async function startSchedulingFlow(phone, purpose) {
 }
 
 function resolveSchedule({ modality, shift, weekday, age }) {
-  const ageGroup = getAgeGroup(age);
+  const ageGroup =
+    modality === "Ballet"
+      ? getAgeGroup(age)
+      : age >= 13
+        ? "Graus"
+        : getAgeGroup(age);
 
   if (weekday === "sexta") {
     return {
@@ -606,7 +612,7 @@ function resolveSchedule({ modality, shift, weekday, age }) {
     };
   }
 
-  if (!ageGroup && !["Teatro", "Musicalização"].includes(modality)) {
+  if (!ageGroup && modality === "Ballet") {
     return {
       ok: false,
       handoffToAttendant: true,
@@ -653,20 +659,14 @@ function resolveSchedule({ modality, shift, weekday, age }) {
       };
     }
 
-    if (age >= 8 && age <= 13) {
+    if (age >= 8) {
       return {
         ok: true,
         scheduleText: `${getWeekdayLabel(weekday)}, das 9h às 10h30`,
         classLabel: "Intermediário",
-        ageGroupLabel: "8 a 13 anos"
+        ageGroupLabel: "8 anos ou mais"
       };
     }
-
-    return {
-      ok: false,
-      handoffToAttendant: true,
-      message: `Para ${modality}, preciso que a secretaria confirme o melhor encaixe para essa idade.`
-    };
   }
 
   if (weekday === "sábado") {
@@ -1002,6 +1002,16 @@ async function handleMessage(phone, incomingText) {
 
   switch (session.state) {
     case STATES.WAITING_INTRO_CONFIRM:
+      if (!["1", "2", "3", "sim", "nao"].includes(text)) {
+        return safeSend(() =>
+          sendText(phone, "Me responda com:\n1 - Sim\n2 - Não\n3 - Área do responsável")
+        );
+      }
+
+      if (text === "3") {
+        return sendMainMenu(phone);
+      }
+
       await updateSession(phone, {
         state: STATES.WAITING_RESPONSIBLE_NAME,
         data: {
@@ -1040,6 +1050,12 @@ async function handleMessage(phone, incomingText) {
       if (!age) {
         return safeSend(() =>
           sendText(phone, "⚠️ Informe apenas a idade em número, por favor.")
+        );
+      }
+
+      if (age < 3) {
+        return safeSend(() =>
+          sendText(phone, "⚠️ Atendemos alunos com idade superior a 2 anos.")
         );
       }
 
