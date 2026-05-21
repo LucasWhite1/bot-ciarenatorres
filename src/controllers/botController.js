@@ -1,4 +1,4 @@
-const env = require("../config/env");
+﻿const env = require("../config/env");
 const path = require("path");
 const {
   STATES,
@@ -1215,7 +1215,7 @@ async function handleMessage(phone, incomingText) {
                 `Tipo: ${schedule.classLabel}`,
                 `Horário: ${schedule.scheduleText}`,
                 "",
-                "Esse horário funciona para você?",
+                "Podemos deixar agendado esse horário para você?",
                 "",
                 "1 - Sim",
                 "2 - Não"
@@ -1227,7 +1227,7 @@ async function handleMessage(phone, incomingText) {
                 `Faixa etária: ${schedule.ageGroupLabel}`,
                 `Horário: ${schedule.scheduleText}`,
                 "",
-                "Esse horário funciona para você?",
+                "Podemos deixar agendado esse horário para você?",
                 "",
                 "1 - Sim",
                 "2 - Não"
