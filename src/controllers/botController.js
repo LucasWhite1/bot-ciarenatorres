@@ -18,6 +18,9 @@ const {
 } = require("../utils/leadFormatter");
 
 const MENU_HINT = '🔁 Para voltar ao menu, digite "Menu".';
+const BINARY_CHOICE_HINT =
+  'Se preferir, digite "Menu" para voltar ao menu principal.';
+const INACTIVITY_RESET_MS = 60 * 60 * 1000;
 const NILL_IMAGE_PATH =
   path.resolve(__dirname, "../../assets/images/nill-atendente.png");
 const WHO_WE_ARE_IMAGE_PATH =
@@ -54,12 +57,9 @@ const COMPANY_PRESENTATION = [
   "• E muito mais"
 ].join("\n");
 
-const COMPANY_PRESENTATION_CONFIRM = [
-  "Você entendeu nossa proposta?",
-  "",
-  "1 - Sim",
-  "2 - Não"
-].join("\n");
+const COMPANY_PRESENTATION_CONFIRM = buildBinaryChoiceMessage(
+  "Você entendeu nossa proposta?"
+);
 
 const TRIAL_CLASS_MENU_MESSAGE = [
   "🎭 *AULA TESTE*",
@@ -477,6 +477,18 @@ function isInCooldown(session) {
   );
 }
 
+function hasSessionExpired(session) {
+  if (!session?.lastInteractionAt) {
+    return false;
+  }
+
+  return Date.now() - new Date(session.lastInteractionAt).getTime() >= INACTIVITY_RESET_MS;
+}
+
+function buildBinaryChoiceMessage(question, options = ["1 - Sim", "2 - Não"]) {
+  return [question, "", ...options, "", BINARY_CHOICE_HINT].join("\n");
+}
+
 function getGreetingPeriod() {
   const hour = Number(
     new Intl.DateTimeFormat("en-US", {
@@ -527,13 +539,10 @@ function getWeekdayLabel(day) {
 }
 
 function buildIntroMessage() {
-  return [
+  return buildBinaryChoiceMessage(
     `👋 Olá, ${getGreetingPeriod()}! Sou o atendente virtual Nill. Vamos continuar com a nossa conversa?`,
-    "",
-    "1 - Sim",
-    "2 - Não",
-    "3 - Área do responsável"
-  ].join("\n");
+    ["1 - Sim", "2 - Não", "3 - Área do responsável"]
+  );
 }
 
 async function sendMainMenu(phone) {
@@ -860,7 +869,7 @@ async function handleOtherQuestion(phone, incomingText) {
     return safeSend(() =>
       sendText(
         phone,
-        "❓ Isso tirou sua dúvida?\n\n1 - Sim\n2 - Não"
+        buildBinaryChoiceMessage("❓ Isso tirou sua dúvida?")
       )
     );
   }
@@ -875,7 +884,9 @@ async function handleOtherQuestion(phone, incomingText) {
   return safeSend(() =>
     sendText(
       phone,
-      "📨 Não encontrei uma resposta exata por aqui. Deseja que eu encaminhe essa dúvida para a secretaria?\n\n1 - Sim\n2 - Não"
+      buildBinaryChoiceMessage(
+        "📨 Não encontrei uma resposta exata por aqui. Deseja que eu encaminhe essa dúvida para a secretaria?"
+      )
     )
   );
 }
@@ -889,7 +900,7 @@ async function handleAutoHelpConfirm(phone, text, session) {
     return safeSend(() =>
       sendText(
         phone,
-        "✨ Que bom! Você gostaria de agendar uma visita?\n\n1 - Sim\n2 - Não"
+        buildBinaryChoiceMessage("✨ Que bom! Você gostaria de agendar uma visita?")
       )
     );
   }
@@ -905,13 +916,15 @@ async function handleAutoHelpConfirm(phone, text, session) {
     return safeSend(() =>
       sendText(
         phone,
-        "📨 Entendi. Deseja que eu encaminhe sua dúvida para a secretaria?\n\n1 - Sim\n2 - Não"
+        buildBinaryChoiceMessage(
+          "📨 Entendi. Deseja que eu encaminhe sua dúvida para a secretaria?"
+        )
       )
     );
   }
 
   return safeSend(() =>
-    sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
+    sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
   );
 }
 
@@ -925,7 +938,7 @@ async function handlePostHelpScheduleConfirm(phone, text) {
   }
 
   return safeSend(() =>
-    sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
+    sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
   );
 }
 
@@ -955,7 +968,7 @@ async function handleAttendantConfirm(phone, text, session) {
   }
 
   return safeSend(() =>
-    sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
+    sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
   );
 }
 
@@ -996,6 +1009,29 @@ async function handleMessage(phone, incomingText) {
     return sendIntroduction(phone);
   }
 
+  if (hasSessionExpired(session)) {
+    await clearSession(phone, {
+      state: STATES.MAIN_MENU,
+      greeted: false,
+      cooldownUntil: null,
+      lastInteractionAt: null,
+      data: {}
+    });
+
+    await safeSend(() =>
+      sendText(
+        phone,
+        '⌛ Seu atendimento anterior expirou por 1 hora de inatividade. Vamos recomeçar.'
+      )
+    );
+
+    return sendIntroduction(phone);
+  }
+
+  await updateSession(phone, {
+    lastInteractionAt: new Date().toISOString()
+  });
+
   if (!session.greeted) {
     return sendIntroduction(phone);
   }
@@ -1004,7 +1040,14 @@ async function handleMessage(phone, incomingText) {
     case STATES.WAITING_INTRO_CONFIRM:
       if (!["1", "2", "3", "sim", "nao"].includes(text)) {
         return safeSend(() =>
-          sendText(phone, "Me responda com:\n1 - Sim\n2 - Não\n3 - Área do responsável")
+          sendText(
+            phone,
+            buildBinaryChoiceMessage("Me responda com:", [
+              "1 - Sim",
+              "2 - Não",
+              "3 - Área do responsável"
+            ])
+          )
         );
       }
 
@@ -1070,14 +1113,16 @@ async function handleMessage(phone, incomingText) {
       return safeSend(() =>
         sendText(
           phone,
-          `🤝 Prazer, ${responsibleName}!\nVocê já conhece nossa companhia?\n\n1 - Sim\n2 - Não`
+          buildBinaryChoiceMessage(
+            `🤝 Prazer, ${responsibleName}!\nVocê já conhece nossa companhia?`
+          )
         )
       );
     }
     case STATES.WAITING_KNOWS_COMPANY:
       if (!["1", "2", "sim", "nao"].includes(text)) {
         return safeSend(() =>
-          sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
+          sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
         );
       }
 
@@ -1096,7 +1141,7 @@ async function handleMessage(phone, incomingText) {
     case STATES.WAITING_PROPOSAL_CONFIRM:
       if (!["1", "2", "sim", "nao"].includes(text)) {
         return safeSend(() =>
-          sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
+          sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
         );
       }
 
@@ -1128,7 +1173,7 @@ async function handleMessage(phone, incomingText) {
       return safeSend(() =>
         sendText(
           phone,
-          `🕘 *QUAL PERÍODO DESEJA?*\n\n1 - Manhã\n2 - Tarde\n\n${MENU_HINT}`
+          `🕘 *QUAL PERÍODO DESEJA?*\n\n1 - Manhã\n2 - Tarde\n\n${BINARY_CHOICE_HINT}`
         )
       );
     }
@@ -1137,7 +1182,10 @@ async function handleMessage(phone, incomingText) {
 
       if (!shift) {
         return safeSend(() =>
-          sendText(phone, "⚠️ Responda com 1 ou 2.\n\n1 - Manhã\n2 - Tarde")
+          sendText(
+            phone,
+            `⚠️ Responda com 1 ou 2.\n\n1 - Manhã\n2 - Tarde\n\n${BINARY_CHOICE_HINT}`
+          )
         );
       }
 
@@ -1218,7 +1266,9 @@ async function handleMessage(phone, incomingText) {
                 "Podemos deixar agendado esse horário para você?",
                 "",
                 "1 - Sim",
-                "2 - Não"
+                "2 - Não",
+                "",
+                BINARY_CHOICE_HINT
               ].join("\n")
             : [
                 "📌 Pela idade do aluno, esta é a melhor sugestão:",
@@ -1230,7 +1280,9 @@ async function handleMessage(phone, incomingText) {
                 "Podemos deixar agendado esse horário para você?",
                 "",
                 "1 - Sim",
-                "2 - Não"
+                "2 - Não",
+                "",
+                BINARY_CHOICE_HINT
               ].join("\n")
         )
       );
@@ -1247,7 +1299,7 @@ async function handleMessage(phone, incomingText) {
       }
 
       return safeSend(() =>
-        sendText(phone, "Me responda com:\n1 - Sim\n2 - Não")
+        sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
       );
     case STATES.WAITING_OTHER_QUESTION:
       return handleOtherQuestion(phone, incomingText);

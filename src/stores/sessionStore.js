@@ -28,6 +28,7 @@ function getDefaultSession() {
     state: STATES.MAIN_MENU,
     greeted: false,
     cooldownUntil: null,
+    lastInteractionAt: null,
     data: {}
   };
 }
