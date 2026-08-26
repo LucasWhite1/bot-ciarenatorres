@@ -95,7 +95,7 @@ async function handleInvalidBinaryInput(phone, session, question = "Não entendi
     sendText(
       phone,
       buildBinaryChoiceMessage(
-        `${question} (tentativa ${attempts}/${MAX_INVALID_ATTEMPTS})`,
+        `${question} `,
         options
       )
     )
