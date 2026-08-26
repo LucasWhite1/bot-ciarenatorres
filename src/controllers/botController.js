@@ -30,6 +30,79 @@ const TRIAL_CLASS_IMAGE_PATH =
 const MENU_IMAGE_PATH =
   path.resolve(__dirname, "../../assets/images/menu-principal.png");
 
+// --- CONFIGURAÇÕES ANTI-LOOP ---
+const MAX_INVALID_ATTEMPTS = 2;
+const PAUSE_KEYWORDS = ["pausar", "humano", "atendente humano", "modo manual"];
+const RESUME_KEYWORDS  = ["retomar", "voltar bot", "bot ativo"];
+const BOT_NOISE_PATTERNS = ["entregue", "lida", "ok", "👍", "/", "stop", "sair", "cancelar"];
+
+function isPauseCommand(text) {
+  return PAUSE_KEYWORDS.some(k => text.includes(k));
+}
+function isResumeCommand(text) {
+  return RESUME_KEYWORDS.some(k => text.includes(k));
+}
+function isNoiseOrAutoReply(text) {
+  const t = text.trim().toLowerCase();
+  const validResponses = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "sim", "nao", "menu", "reiniciar", "manha", "manhã", "tarde", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+  if (validResponses.includes(t)) return false;
+  if (t.length <= 4) return true; 
+  return BOT_NOISE_PATTERNS.some(p => t === p);
+}
+
+async function bumpInvalidAttempts(phone, session) {
+  const attempts = (session.data?.invalidAttempts || 0) + 1;
+  await updateSession(phone, {
+    data: { ...session.data, invalidAttempts: attempts }
+  });
+  return attempts;
+}
+
+async function escalateToHuman(phone, session, reason) {
+  await safeSend(() =>
+    sendText(
+      phone,
+      "🧑‍💼 Parece que estamos com dificuldade de seguir automático. " +
+      "Vou transferir você para a secretaria agora mesmo."
+    )
+  );
+
+  await safeSend(() =>
+    sendInternalNotification(
+      formatAttendantSummary({
+        phone,
+        question: `${reason} — estado: ${session.state} — ` +
+          `dados: ${JSON.stringify(session.data || {})}`
+      })
+    )
+  );
+
+  // Pausa o bot até que o atendente encerre manualmente
+  return updateSession(phone, {
+    state: "PAUSED",
+    data: { ...session.data, invalidAttempts: 0, pausedReason: reason }
+  });
+}
+
+async function handleInvalidBinaryInput(phone, session, question = "Não entendi. Pode responder com 1 ou 2?", options = ["1 - Sim", "2 - Não"]) {
+  const attempts = await bumpInvalidAttempts(phone, session);
+
+  if (attempts >= MAX_INVALID_ATTEMPTS) {
+    return escalateToHuman(phone, session, "Múltiplas respostas inválidas no fluxo");
+  }
+
+  return safeSend(() =>
+    sendText(
+      phone,
+      buildBinaryChoiceMessage(
+        `${question} (tentativa ${attempts}/${MAX_INVALID_ATTEMPTS})`,
+        options
+      )
+    )
+  );
+}
+// --- FIM DAS CONFIGURAÇÕES ANTI-LOOP ---
+
 const LOCATION_MESSAGE = [
   "📍 *LOCALIZAÇÃO*",
   "",
@@ -759,9 +832,11 @@ async function handoffScheduleByAge(phone, session, modality) {
     )
   );
 
+  // Pausa o bot para o atendente humano assumir e evitar loop
   await updateSession(phone, {
-    state: STATES.MAIN_MENU,
-    greeted: true
+    state: "PAUSED",
+    greeted: true,
+    data: { ...session.data, pausedReason: "Handoff por idade" }
   });
 
   return null;
@@ -923,12 +998,10 @@ async function handleAutoHelpConfirm(phone, text, session) {
     );
   }
 
-  return safeSend(() =>
-    sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
-  );
+  return handleInvalidBinaryInput(phone, session);
 }
 
-async function handlePostHelpScheduleConfirm(phone, text) {
+async function handlePostHelpScheduleConfirm(phone, text, session) {
   if (text === "1" || text === "sim") {
     return startSchedulingFlow(phone, "Fazer visita");
   }
@@ -937,9 +1010,7 @@ async function handlePostHelpScheduleConfirm(phone, text) {
     return sendMainMenu(phone);
   }
 
-  return safeSend(() =>
-    sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
-  );
+  return handleInvalidBinaryInput(phone, session);
 }
 
 async function handleAttendantConfirm(phone, text, session) {
@@ -960,21 +1031,50 @@ async function handleAttendantConfirm(phone, text, session) {
       )
     );
 
-    return null;
+    // Pausa o bot para o atendente humano assumir
+    return updateSession(phone, {
+      state: "PAUSED",
+      data: { ...session.data, invalidAttempts: 0, pausedReason: "Handoff para secretaria" }
+    });
   }
 
   if (text === "2" || text === "nao") {
     return sendMainMenu(phone);
   }
 
-  return safeSend(() =>
-    sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
-  );
+  return handleInvalidBinaryInput(phone, session);
 }
 
 async function handleMessage(phone, incomingText) {
   const text = normalizeText(incomingText);
   let session = await getSession(phone);
+
+  // 1. Filtro Anti-Loop: ignora mensagens de auto-resposta de outros bots
+  if (isNoiseOrAutoReply(text)) {
+    return null;
+  }
+
+  // 2. Controle de Pausa (Atendente Humano)
+  if (isPauseCommand(text)) {
+    await safeSend(() => sendText(phone, "⏸️ Bot pausado. O atendente humano vai continuar com você agora."));
+    return updateSession(phone, {
+      state: "PAUSED",
+      data: { ...session.data, pausedReason: "Comando manual do atendente" }
+    });
+  }
+
+  if (session.state === "PAUSED") {
+    if (isResumeCommand(text)) {
+      await updateSession(phone, {
+        state: STATES.MAIN_MENU,
+        greeted: true,
+        data: { ...session.data, pausedReason: undefined }
+      });
+      return sendMainMenu(phone);
+    }
+    // Se está pausado, ignora silenciosamente para não competir com o atendente
+    return null; 
+  }
 
   if (isRestartCommand(text)) {
     await clearSession(phone, {
@@ -1039,16 +1139,7 @@ async function handleMessage(phone, incomingText) {
   switch (session.state) {
     case STATES.WAITING_INTRO_CONFIRM:
       if (!["1", "2", "3", "sim", "nao"].includes(text)) {
-        return safeSend(() =>
-          sendText(
-            phone,
-            buildBinaryChoiceMessage("Me responda com:", [
-              "1 - Sim",
-              "2 - Não",
-              "3 - Área do responsável"
-            ])
-          )
-        );
+        return handleInvalidBinaryInput(phone, session, "Não entendi. Pode responder com:", ["1 - Sim", "2 - Não", "3 - Área do responsável"]);
       }
 
       if (text === "3") {
@@ -1058,6 +1149,7 @@ async function handleMessage(phone, incomingText) {
       await updateSession(phone, {
         state: STATES.WAITING_RESPONSIBLE_NAME,
         data: {
+          invalidAttempts: 0,
           introAnswer: text === "1" || text === "sim" ? "Sim" : "Não"
         }
       });
@@ -1071,6 +1163,7 @@ async function handleMessage(phone, incomingText) {
       await updateSession(phone, {
         state: STATES.WAITING_STUDENT_NAME,
         data: {
+          invalidAttempts: 0,
           responsibleName: incomingText.trim()
         }
       });
@@ -1081,6 +1174,7 @@ async function handleMessage(phone, incomingText) {
       await updateSession(phone, {
         state: STATES.WAITING_STUDENT_AGE,
         data: {
+          invalidAttempts: 0,
           studentName: incomingText.trim()
         }
       });
@@ -1105,6 +1199,7 @@ async function handleMessage(phone, incomingText) {
       await updateSession(phone, {
         state: STATES.WAITING_KNOWS_COMPANY,
         data: {
+          invalidAttempts: 0,
           studentAge: age
         }
       });
@@ -1121,14 +1216,13 @@ async function handleMessage(phone, incomingText) {
     }
     case STATES.WAITING_KNOWS_COMPANY:
       if (!["1", "2", "sim", "nao"].includes(text)) {
-        return safeSend(() =>
-          sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
-        );
+        return handleInvalidBinaryInput(phone, session);
       }
 
       await updateSession(phone, {
         state: STATES.WAITING_PROPOSAL_CONFIRM,
         data: {
+          invalidAttempts: 0,
           knowsCompany: text === "1" || text === "sim" ? "Sim" : "Não"
         }
       });
@@ -1140,13 +1234,12 @@ async function handleMessage(phone, incomingText) {
       return safeSend(() => sendText(phone, COMPANY_PRESENTATION_CONFIRM));
     case STATES.WAITING_PROPOSAL_CONFIRM:
       if (!["1", "2", "sim", "nao"].includes(text)) {
-        return safeSend(() =>
-          sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
-        );
+        return handleInvalidBinaryInput(phone, session);
       }
 
       await updateSession(phone, {
         data: {
+          invalidAttempts: 0,
           understoodProposal: text === "1" || text === "sim" ? "Sim" : "Não"
         }
       });
@@ -1166,6 +1259,7 @@ async function handleMessage(phone, incomingText) {
       await updateSession(phone, {
         state: STATES.WAITING_SHIFT,
         data: {
+          invalidAttempts: 0,
           modality
         }
       });
@@ -1192,6 +1286,7 @@ async function handleMessage(phone, incomingText) {
       await updateSession(phone, {
         state: STATES.WAITING_VISIT_DAY,
         data: {
+          invalidAttempts: 0,
           shift
         }
       });
@@ -1246,6 +1341,7 @@ async function handleMessage(phone, incomingText) {
       await updateSession(phone, {
         state: STATES.WAITING_SCHEDULE_CONFIRM,
         data: {
+          invalidAttempts: 0,
           preferredDay: weekday,
           suggestedSchedule: schedule.scheduleText,
           suggestedClassLabel: schedule.classLabel,
@@ -1298,15 +1394,13 @@ async function handleMessage(phone, incomingText) {
         return finalizeScheduling(phone, session, false);
       }
 
-      return safeSend(() =>
-        sendText(phone, buildBinaryChoiceMessage("Me responda com:"))
-      );
+      return handleInvalidBinaryInput(phone, session);
     case STATES.WAITING_OTHER_QUESTION:
       return handleOtherQuestion(phone, incomingText);
     case STATES.WAITING_AUTO_HELP_CONFIRM:
       return handleAutoHelpConfirm(phone, text, session);
     case STATES.WAITING_POST_HELP_SCHEDULE_CONFIRM:
-      return handlePostHelpScheduleConfirm(phone, text);
+      return handlePostHelpScheduleConfirm(phone, text, session);
     case STATES.WAITING_ATTENDANT_CONFIRM:
       return handleAttendantConfirm(phone, text, session);
     default:
